@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduSahayak - Bloom's Taxonomy Alignment Checker</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/static/style.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            match: '#10b981',
+            mismatch: '#ef4444',
+            unspecified: '#64748b',
+            ambiguous: '#8b5cf6'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i data-lucide="graduation-cap" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <span class="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">EduSahayak</span>
+          <span class="text-xs text-slate-400 block -mt-1 font-medium">ShikshakAI Academic Suite</span>
+        </div>
+      </div>
+
+      <!-- Feature Tabs Navigation -->
+      <nav class="flex items-center space-x-1 sm:space-x-2 bg-slate-900 p-1 rounded-lg border border-slate-800">
+        <button id="nav-bloom" onclick="switchMainTab('bloom')" class="nav-tab px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-2 bg-indigo-600 text-white shadow">
+          <i data-lucide="check-check" class="w-4 h-4"></i>
+          <span>Bloom's Checker</span>
+        </button>
+        <button id="nav-ocr" onclick="switchMainTab('ocr')" class="nav-tab px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200">
+          <i data-lucide="scan-line" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">OCR Comparison</span>
+          <span class="sm:hidden">OCR</span>
+        </button>
+        <button id="nav-enhance" onclick="switchMainTab('enhance')" class="nav-tab px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">AI Enhancer</span>
+          <span class="sm:hidden">Enhance</span>
+        </button>
+        <button id="nav-pdf" onclick="switchMainTab('pdf')" class="nav-tab px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200">
+          <i data-lucide="file-text" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">PDF Generator</span>
+          <span class="sm:hidden">PDF</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ==================== BLOOM'S TAXONOMY ALIGNMENT CHECKER VIEW ==================== -->
+    <section id="view-bloom" class="space-y-8">
+      
+      <!-- Hero Banner -->
+      <div class="bg-gradient-to-r from-slate-950 via-indigo-950/40 to-slate-950 border border-slate-800 rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-xl">
+        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="max-w-3xl space-y-3 relative z-10">
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
+            <i data-lucide="brain-circuit" class="w-3.5 h-3.5"></i>
+            <span>Revised Bloom's Taxonomy (Anderson & Krathwohl)</span>
+          </div>
+          <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+            Bloom's Taxonomy Alignment Checker
+          </h1>
+          <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+            Analyze question papers to determine whether the Bloom's Taxonomy cognitive levels assigned to each question match their actual cognitive demand.
+          </p>
+        </div>
+
+        <!-- 6 Revised Bloom Levels Reference Badges -->
+        <div class="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs">
+          <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 text-center">
+            <span class="font-bold text-sky-400 block">Level 1</span>
+            <span class="text-slate-300 font-medium">Remember</span>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 text-center">
+            <span class="font-bold text-emerald-400 block">Level 2</span>
+            <span class="text-slate-300 font-medium">Understand</span>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 text-center">
+            <span class="font-bold text-amber-400 block">Level 3</span>
+            <span class="text-slate-300 font-medium">Apply</span>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 text-center">
+            <span class="font-bold text-orange-400 block">Level 4</span>
+            <span class="text-slate-300 font-medium">Analyze</span>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 text-center">
+            <span class="font-bold text-rose-400 block">Level 5</span>
+            <span class="text-slate-300 font-medium">Evaluate</span>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 text-center">
+            <span class="font-bold text-purple-400 block">Level 6</span>
+            <span class="text-slate-300 font-medium">Create</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Section Card -->
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        
+        <!-- Input Method Tabs -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div class="flex space-x-2">
+            <button id="input-tab-text" onclick="switchInputMethod('text')" class="input-method-btn px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white flex items-center space-x-2 transition">
+              <i data-lucide="type" class="w-4 h-4"></i>
+              <span>Paste Text</span>
+            </button>
+            <button id="input-tab-pdf" onclick="switchInputMethod('pdf')" class="input-method-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 bg-slate-900 hover:bg-slate-850 flex items-center space-x-2 transition">
+              <i data-lucide="file-up" class="w-4 h-4"></i>
+              <span>Upload PDF</span>
+            </button>
+            <button id="input-tab-image" onclick="switchInputMethod('image')" class="input-method-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 bg-slate-900 hover:bg-slate-850 flex items-center space-x-2 transition">
+              <i data-lucide="image" class="w-4 h-4"></i>
+              <span>Upload Images</span>
+            </button>
+          </div>
+
+          <!-- Sample Preload Dropdown / Buttons -->
+          <div class="hidden md:flex items-center space-x-2">
+            <span class="text-xs text-slate-400">Quick Samples:</span>
+            <button onclick="loadSample('cs_exam')" class="px-2.5 py-1 text-xs rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+              CS Paper (Mixed Levels)
+            </button>
+            <button onclick="loadSample('mismatch_case')" class="px-2.5 py-1 text-xs rounded bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 transition">
+              Mismatch Test
+            </button>
+            <button onclick="loadSample('no_levels')" class="px-2.5 py-1 text-xs rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+              No BL Annotated
+            </button>
+          </div>
+        </div>
+
+        <!-- Input Pane 1: Paste Text -->
+        <div id="input-pane-text" class="input-pane space-y-3">
+          <label class="block text-sm font-medium text-slate-300">
+            Paste your complete question paper text:
+          </label>
+          <textarea id="bloom-text-input" rows="12" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-100 font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500 resize-y" placeholder="Paste your question paper here...
+
+Example:
+UNIVERSITY EXAMINATION
+SUBJECT: OBJECT ORIENTED PROGRAMMING
+
+Q1. What is Object Oriented Programming? (2 Marks) [BL-3]
+
+Q2.
+a) Explain inheritance in Java with a code example. (5 Marks) [BL-2]
+b) Design a class hierarchy for a banking application. (10 Marks) [BL-6]"></textarea>
+          <div class="flex justify-between items-center text-xs text-slate-400">
+            <span>Supports headers, footers, subquestions (a, b, i, ii), and Bloom tags like [BL-3], (BL-2), Level 1, etc.</span>
+            <button onclick="document.getElementById('bloom-text-input').value=''" class="text-slate-400 hover:text-rose-400 transition">Clear Text</button>
+          </div>
+        </div>
+
+        <!-- Input Pane 2: Upload PDF -->
+        <div id="input-pane-pdf" class="input-pane hidden space-y-4">
+          <div id="pdf-dropzone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-2xl p-8 text-center transition bg-slate-900/50 cursor-pointer" onclick="document.getElementById('pdf-file-input').click()">
+            <input type="file" id="pdf-file-input" accept=".pdf" class="hidden" onchange="handlePdfSelected(this.files)">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <i data-lucide="file-up" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-200">Click to upload or drag & drop Question Paper PDF</h3>
+            <p class="text-xs text-slate-400 mt-1">Supports digital text PDFs and scanned document PDFs (up to 25MB)</p>
+          </div>
+          <div id="pdf-file-info" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <i data-lucide="file-check" class="w-6 h-6 text-emerald-400"></i>
+              <div>
+                <p id="pdf-filename" class="text-sm font-semibold text-slate-200"></p>
+                <p id="pdf-filesize" class="text-xs text-slate-400"></p>
+              </div>
+            </div>
+            <button onclick="clearSelectedPdf()" class="text-xs text-rose-400 hover:text-rose-300">Remove</button>
+          </div>
+        </div>
+
+        <!-- Input Pane 3: Upload Images -->
+        <div id="input-pane-image" class="input-pane hidden space-y-4">
+          <div id="image-dropzone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-2xl p-8 text-center transition bg-slate-900/50 cursor-pointer" onclick="document.getElementById('image-file-input').click()">
+            <input type="file" id="image-file-input" accept="image/*" multiple class="hidden" onchange="handleImagesSelected(this.files)">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <i data-lucide="images" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-200">Click to upload or drag & drop Question Paper Images</h3>
+            <p class="text-xs text-slate-400 mt-1">Upload 1 or more scanned pages (PNG, JPG, JPEG, WEBP, TIFF)</p>
+          </div>
+          <div id="images-preview-list" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+        </div>
+
+        <!-- Action & Analyze Button -->
+        <div class="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="text-xs text-slate-400 flex items-center space-x-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Evaluates cognitive demand using Revised Bloom's Taxonomy &amp; Groq LLaMA 3.3</span>
+          </div>
+
+          <button id="btn-analyze-bloom" onclick="triggerBloomAnalysis()" class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-3 transition transform active:scale-98">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-base">Analyze Bloom's Levels</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State Overlay / Card -->
+      <div id="bloom-loading-state" class="hidden bg-slate-950 border border-indigo-500/30 rounded-2xl p-12 text-center shadow-2xl space-y-6">
+        <div class="relative w-20 h-20 mx-auto">
+          <div class="absolute inset-0 rounded-full border-4 border-indigo-500/20 animate-ping"></div>
+          <div class="w-20 h-20 rounded-full border-4 border-t-indigo-500 border-r-indigo-500 border-b-transparent border-l-transparent animate-spin flex items-center justify-center">
+            <i data-lucide="brain-circuit" class="w-8 h-8 text-indigo-400"></i>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-xl font-bold text-white">Analyzing Question Paper...</h3>
+          <p id="loading-step-text" class="text-sm text-slate-400 max-w-md mx-auto">
+            Extracting text, distinguishing question hierarchy, and evaluating cognitive demand against Revised Bloom's Taxonomy...
+          </p>
+        </div>
+      </div>
+
+      <!-- Error Alert Card -->
+      <div id="bloom-error-card" class="hidden bg-rose-950/40 border border-rose-800/80 rounded-2xl p-6 text-rose-200 flex items-start space-x-4 shadow-lg">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex-shrink-0 flex items-center justify-center">
+          <i data-lucide="alert-circle" class="w-6 h-6"></i>
+        </div>
+        <div class="space-y-1">
+          <h4 class="font-bold text-white text-base">Analysis Error</h4>
+          <p id="bloom-error-msg" class="text-sm text-rose-300"></p>
+        </div>
+      </div>
+
+      <!-- ==================== RESULTS SECTION ==================== -->
+      <div id="bloom-results-section" class="hidden space-y-8">
+        
+        <!-- Summary Cards Grid (No arbitrary percentage scores) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          
+          <!-- Total Questions Analyzed -->
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-lg">
+            <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Total Questions</span>
+              <i data-lucide="list-checks" class="w-4 h-4 text-indigo-400"></i>
+            </div>
+            <div id="stat-total" class="text-3xl font-extrabold text-white">0</div>
+            <p class="text-xs text-slate-500 mt-1">Identified in paper</p>
+          </div>
+
+          <!-- Matches -->
+          <div class="bg-slate-950 border border-emerald-900/40 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+            <div class="flex items-center justify-between text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Matches</span>
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+            </div>
+            <div id="stat-matches" class="text-3xl font-extrabold text-emerald-400">0</div>
+            <p class="text-xs text-emerald-500/80 mt-1">Aligned with Bloom level</p>
+          </div>
+
+          <!-- Mismatches -->
+          <div class="bg-slate-950 border border-rose-900/40 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+            <div class="flex items-center justify-between text-rose-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Mismatches</span>
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>
+            </div>
+            <div id="stat-mismatches" class="text-3xl font-extrabold text-rose-400">0</div>
+            <p class="text-xs text-rose-500/80 mt-1">Differ from cognitive demand</p>
+          </div>
+
+          <!-- Not Specified -->
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-lg">
+            <div class="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Not Specified</span>
+              <i data-lucide="help-circle" class="w-4 h-4 text-slate-400"></i>
+            </div>
+            <div id="stat-unspecified" class="text-3xl font-extrabold text-slate-300">0</div>
+            <p class="text-xs text-slate-500 mt-1">No BL tag in paper</p>
+          </div>
+
+          <!-- Ambiguous -->
+          <div class="bg-slate-950 border border-purple-900/40 rounded-2xl p-5 shadow-lg">
+            <div class="flex items-center justify-between text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Ambiguous</span>
+              <i data-lucide="sparkle" class="w-4 h-4 text-purple-400"></i>
+            </div>
+            <div id="stat-ambiguous" class="text-3xl font-extrabold text-purple-400">0</div>
+            <p class="text-xs text-purple-500/80 mt-1">Context-dependent</p>
+          </div>
+
+        </div>
+
+        <!-- Filter and View Controls Bar -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs text-slate-400 font-semibold uppercase mr-2">Filter:</span>
+            <button onclick="setFilter('ALL')" id="filter-btn-all" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white">All</button>
+            <button onclick="setFilter('MISMATCH')" id="filter-btn-mismatch" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-rose-400 border border-rose-800/40">Mismatches</button>
+            <button onclick="setFilter('MATCH')" id="filter-btn-match" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-800/40">Matches</button>
+            <button onclick="setFilter('NOT_SPECIFIED')" id="filter-btn-unspecified" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700">Not Specified</button>
+            <button onclick="setFilter('AMBIGUOUS')" id="filter-btn-ambiguous" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-purple-400 border border-purple-800/40">Ambiguous</button>
+          </div>
+
+          <div class="flex items-center space-x-3 w-full md:w-auto">
+            <div class="relative flex-1 md:w-64">
+              <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+              <input type="text" id="bloom-search-input" oninput="handleSearch(this.value)" placeholder="Search questions..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-indigo-500">
+            </div>
+            <button onclick="exportResultsJson()" title="Copy JSON Report" class="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-700 transition">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Question Paper Analysis Results Table -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-900/90 border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  <th class="py-4 px-4 w-28">Question</th>
+                  <th class="py-4 px-4 min-w-[280px]">Question Text</th>
+                  <th class="py-4 px-4 w-36 text-center">Assigned BL</th>
+                  <th class="py-4 px-4 w-36 text-center">AI-Assessed BL</th>
+                  <th class="py-4 px-4 w-32 text-center">Match Status</th>
+                  <th class="py-4 px-4 min-w-[240px]">Cognitive Demand Rationale</th>
+                  <th class="py-4 px-4 w-20 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="bloom-table-body" class="divide-y divide-slate-800/60 text-sm">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ==================== DETAIL MODAL ==================== -->
+    <div id="bloom-detail-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button onclick="closeDetailModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+
+        <div class="space-y-1">
+          <div class="flex items-center space-x-3">
+            <span id="modal-q-id" class="px-3 py-1 bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-bold rounded-lg text-sm">Q1</span>
+            <span id="modal-status-badge"></span>
+          </div>
+          <h3 class="text-lg font-bold text-white pt-2">Question Detail &amp; Bloom's Assessment</h3>
+        </div>
+
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <label class="text-xs uppercase font-semibold text-slate-400 block mb-1">Question Text</label>
+          <p id="modal-question-text" class="text-slate-200 text-sm leading-relaxed"></p>
+        </div>
+
+        <!-- Side-by-side comparison -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <span class="text-xs uppercase font-semibold text-slate-400 block">Assigned in Paper</span>
+            <div id="modal-assigned-bl" class="text-xl font-bold text-slate-200">Not Specified</div>
+            <p id="modal-assigned-desc" class="text-xs text-slate-400"></p>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-indigo-900/40 space-y-2">
+            <span class="text-xs uppercase font-semibold text-indigo-400 block">AI Cognitive Assessment</span>
+            <div id="modal-ai-bl" class="text-xl font-bold text-indigo-300">Level 2 — Understand</div>
+            <div class="flex items-center space-x-2 text-xs text-slate-400">
+              <span>Confidence:</span>
+              <span id="modal-confidence" class="font-bold text-slate-200">92%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+          <label class="text-xs uppercase font-semibold text-slate-400 block">Academic Rationale (Cognitive Process Analysis)</label>
+          <p id="modal-reason" class="text-slate-300 text-sm leading-relaxed"></p>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button onclick="closeDetailModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg text-sm transition">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==================== EXISTING FEATURE: OCR COMPARER VIEW ==================== -->
+    <section id="view-ocr" class="hidden space-y-6">
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div>
+          <h2 class="text-2xl font-bold text-white">OCR Engine Comparison</h2>
+          <p class="text-sm text-slate-400">Compare text recognition performance between Tesseract and PaddleOCR engines.</p>
+        </div>
+
+        <div class="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center cursor-pointer hover:border-indigo-500 transition" onclick="document.getElementById('ocr-file-input').click()">
+          <input type="file" id="ocr-file-input" accept="image/*" class="hidden" onchange="runOcrComparison(this.files[0])">
+          <i data-lucide="file-search" class="w-10 h-10 mx-auto text-indigo-400 mb-2"></i>
+          <p class="text-sm font-semibold text-slate-200">Select an image to benchmark OCR engines</p>
+        </div>
+
+        <div id="ocr-loading" class="hidden text-center py-6 text-indigo-400">
+          <i data-lucide="loader-2" class="w-8 h-8 mx-auto animate-spin mb-2"></i>
+          <p class="text-sm">Running OCR engines...</p>
+        </div>
+
+        <div id="ocr-results" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold text-white text-base">PaddleOCR</h3>
+              <span id="paddle-meta" class="text-xs text-slate-400"></span>
+            </div>
+            <pre id="paddle-output" class="bg-slate-950 p-4 rounded-lg text-xs font-mono text-slate-300 h-64 overflow-y-auto whitespace-pre-wrap"></pre>
+          </div>
+
+          <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold text-white text-base">Tesseract OCR</h3>
+              <span id="tesseract-meta" class="text-xs text-slate-400"></span>
+            </div>
+            <pre id="tesseract-output" class="bg-slate-950 p-4 rounded-lg text-xs font-mono text-slate-300 h-64 overflow-y-auto whitespace-pre-wrap"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== EXISTING FEATURE: AI TEXT ENHANCER VIEW ==================== -->
+    <section id="view-enhance" class="hidden space-y-6">
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div>
+          <h2 class="text-2xl font-bold text-white">AI OCR Text Enhancer</h2>
+          <p class="text-sm text-slate-400">Clean noisy OCR output and correct OCR spelling artifacts using Groq LLaMA.</p>
+        </div>
+
+        <div class="space-y-4">
+          <textarea id="enhance-input" rows="6" placeholder="Paste noisy raw OCR text here..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm font-mono text-slate-200"></textarea>
+          <button onclick="runTextEnhancement()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm flex items-center space-x-2 transition">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span>Enhance Text</span>
+          </button>
+        </div>
+
+        <div id="enhance-loading" class="hidden text-center py-6 text-indigo-400">
+          <i data-lucide="loader-2" class="w-8 h-8 mx-auto animate-spin mb-2"></i>
+          <p class="text-sm">Cleaning noisy OCR text with Groq AI...</p>
+        </div>
+
+        <div id="enhance-output-card" class="hidden bg-slate-900 p-5 rounded-xl border border-slate-800 space-y-2">
+          <h4 class="font-bold text-white text-sm">Enhanced Clean Text:</h4>
+          <pre id="enhance-output" class="bg-slate-950 p-4 rounded-lg text-sm text-slate-200 whitespace-pre-wrap"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== EXISTING FEATURE: PDF GENERATOR VIEW ==================== -->
+    <section id="view-pdf" class="hidden space-y-6">
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Multi-Page PDF Generator</h2>
+          <p class="text-sm text-slate-400">Generate formatted academic PDF documents.</p>
+        </div>
+
+        <div class="space-y-4">
+          <textarea id="pdf-gen-input" rows="8" placeholder="Enter text to format and export as PDF..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm font-mono text-slate-200"></textarea>
+          <button onclick="runPdfGeneration()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm flex items-center space-x-2 transition">
+            <i data-lucide="file-down" class="w-4 h-4"></i>
+            <span>Generate PDF</span>
+          </button>
+        </div>
+
+        <div id="pdf-gen-status" class="hidden p-4 rounded-xl text-sm"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500 bg-slate-950">
+    <p>EduSahayak Academic Final Year Project &copy; 2026. Revised Bloom's Taxonomy Alignment Engine.</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>
