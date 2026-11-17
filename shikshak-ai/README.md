@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EduSahayak — Frontend
+
+The web application for **EduSahayak**, an AI-assisted academic assessment and evaluation platform.
+
+Built with Next.js, React and TypeScript, the frontend provides the interface for educators to analyse question papers, process student answer scripts, evaluate responses and explore Bloom's Taxonomy alignment.
+
+## Technology Stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
+- Supabase client integration
+- AI provider integrations through applicable API routes
+
+## Project Structure
+
+```text
+shikshak-ai/
+├── app/
+│   ├── api/           # Frontend API routes
+│   ├── components/    # Application components
+│   ├── views/         # Application views
+│   ├── login/         # Authentication interface
+│   └── page.tsx       # Main application entry
+├── components/
+├── lib/
+├── public/
+├── utils/
+├── package.json
+└── .env.example
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js and npm
+- Python backend configured separately
+- Required API credentials
+
+### 1. Install dependencies
+
+```bash
+npm ci
+```
+
+### 2. Configure environment variables
+
+Create your local environment file:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Configure the required variables in `.env.local`, including the backend URL, AI provider credentials and Supabase configuration.
+
+Never commit `.env.local` or real API credentials.
+
+### 3. Start the application
+
+Start the Python FastAPI backend separately from the `ocr-backend` directory.
+
+Then run the frontend:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Keep both servers running while using the application locally.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Available Commands
 
-## Learn More
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the development server |
+| `npm run build` | Create a production build |
+| `npm run start` | Start the production server |
+| `npm run lint` | Run lint checks |
 
-To learn more about Next.js, take a look at the following resources:
+## Backend Integration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The frontend communicates with the Python FastAPI backend for document processing, OCR workflows, answer evaluation and related services.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The backend API documentation is available at:
 
-## Deploy on Vercel
+`http://127.0.0.1:8000/docs`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+For complete project architecture, backend setup, API endpoints and team information, see the [main project README](../README.md).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+**EduSahayak — AI-Assisted Academic Assessment and Evaluation Platform.**
