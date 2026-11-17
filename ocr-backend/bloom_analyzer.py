@@ -218,7 +218,7 @@ def extract_bloom_and_marks(line: str) -> Tuple[str, Optional[int], Optional[int
                 assigned_bl = int(val)
             elif val.lower() in BLOOM_NAME_TO_LEVEL:
                 assigned_bl = BLOOM_NAME_TO_LEVEL[val.lower()]
-            
+
             cleaned = cleaned[:match.start()] + " " + cleaned[match.end():]
             break
 
@@ -458,12 +458,16 @@ CRITICAL ACADEMIC EVALUATION RULES:
 1. DO NOT classify questions solely by action verbs! Analyze the actual cognitive demand of the entire question in context.
 2. If a question is ambiguous, missing vital context, or its cognitive demand cannot be reliably determined without unseen context, set `isAmbiguous: true`, provide the closest estimated level, and explain why in `reason`.
 3. Output concise, objective, academically sound reasons (1-2 sentences) highlighting the specific cognitive demand required.
+4. Classify ONLY the question entries supplied in the user message. Do NOT independently split, expand, merge, or invent questions or subquestions.
+5. Return EXACTLY one analysis object for every supplied input object, in the same order.
+6. Copy each input object's `id` EXACTLY into its corresponding output object. Never create or modify an ID.
+7. Even if question text contains parts (a), (b), (i), (ii), classify the entire supplied entry as one question unless those parts are separate input objects.
 
 Respond strictly with valid JSON conforming to this schema:
 {
   "analysis": [
     {
-      "id": "Q1(a)",
+      "id": "Q1",
       "aiBloomLevel": 2,
       "aiBloomName": "Understand",
       "confidence": 0.92,
@@ -535,30 +539,88 @@ Return a JSON object containing the "analysis" array with each question's evalua
 
     except Exception as e:
         logger.error(f"Groq API call failed: {str(e)}")
+
+        print("\n========== GROQ ERROR DIAGNOSTIC ==========", flush=True)
+        print("ERROR TYPE:", type(e).__name__, flush=True)
+        print("ERROR MESSAGE:", str(e), flush=True)
+
+        response = getattr(e, "response", None)
+        if response is not None:
+            try:
+                error_data = response.json()
+                print("GROQ ERROR RESPONSE:", json.dumps(error_data, indent=2), flush=True)
+                error_details = error_data.get("error", {})
+                if isinstance(error_details, dict):
+                    print("FAILED GENERATION:", error_details.get("failed_generation"), flush=True)
+            except Exception:
+                print("GROQ RESPONSE TEXT:", getattr(response, "text", ""), flush=True)
+
+        print("========== END GROQ ERROR =================\n", flush=True)
         raise RuntimeError(f"Groq AI service unavailable or returned an error: {str(e)}")
 
     # Parse and validate response JSON structure
     analysis_list = parse_groq_json_response(content)
     logger.info(f"Successfully parsed {len(analysis_list)} question classifications from Groq response.")
+    print("DEBUG GROQ COUNT:", len(analysis_list), flush=True)
+    print("DEBUG GROQ IDS:", [
+        item.get("id") or item.get("question_id") or
+        item.get("questionNumber") or item.get("question_number")
+        for item in analysis_list
+    ], flush=True)
+    print("DEBUG INPUT IDS:", [
+        q.get("fullIdentifier") or q.get("questionNumber")
+        for q in questions
+    ], flush=True)
 
-    # Build dual-key lookup for robust ID matching (exact and normalized)
+    logger.info("GROQ QUESTION IDS: %s", [item.get("id") for item in analysis_list])
+    logger.info("GROQ RESPONSE FIELDS: %s", [list(item.keys()) for item in analysis_list])
+
+    # Build flexible lookup using multiple possible ID field names.
     analysis_by_id: Dict[str, Dict[str, Any]] = {}
+
     for item in analysis_list:
-        raw_id = str(item.get("id", "")).strip()
+        raw_id = str(
+            item.get("id")
+            or item.get("question_id")
+            or item.get("questionId")
+            or item.get("questionNumber")
+            or item.get("question_number")
+            or item.get("fullIdentifier")
+            or ""
+        ).strip()
+
         if raw_id:
             analysis_by_id[raw_id] = item
             norm_id = normalize_question_id(raw_id)
             if norm_id:
                 analysis_by_id[norm_id] = item
 
+    logger.info(
+        "Groq classification count: %s; input question count: %s",
+        len(analysis_list), len(questions)
+    )
+
     enriched_questions = []
-    for q in questions:
+
+    for index, q in enumerate(questions):
         qid = q.get("fullIdentifier") or q.get("questionNumber") or ""
         norm_qid = normalize_question_id(qid)
 
         eval_item = analysis_by_id.get(qid) or analysis_by_id.get(norm_qid)
+
+        # Match by order only when every input question has a response.
+        if not eval_item and len(analysis_list) == len(questions):
+            eval_item = analysis_list[index]
+            logger.warning(
+                "Question ID '%s' matched by response order.",
+                qid
+            )
+
         if not eval_item:
-            raise RuntimeError(f"Groq AI response did not include a classification for question ID '{qid}'.")
+            raise RuntimeError(
+                f"Groq AI response did not include a classification for question ID '{qid}'. "
+                f"Received {len(analysis_list)} classifications for {len(questions)} questions."
+            )
 
         ai_level_raw = eval_item.get("aiBloomLevel")
         if isinstance(ai_level_raw, str) and ai_level_raw.isdigit():
@@ -611,7 +673,7 @@ def fallback_cognitive_assessment(questions: List[Dict[str, Any]]) -> List[Dict[
     for q in questions:
         text = q.get("questionText", "").strip().lower()
         assigned_bl = q.get("assignedBloomLevel")
-        
+
         ai_level = 2
         ai_name = "Understand"
         confidence = 0.85
@@ -684,6 +746,16 @@ def analyze_question_paper_text(
         raise ValueError("Please provide a question paper before analyzing.")
 
     parsed_raw_questions = parse_question_paper_structure(raw_text)
+
+    print("\n========== PARSED QUESTION DIAGNOSTIC ==========", flush=True)
+    for index, question in enumerate(parsed_raw_questions, 1):
+        print(
+            f"ITEM {index} | ID: {question.get('fullIdentifier')} | "
+            f"TEXT: {question.get('questionText', '')[:250]}",
+            flush=True
+        )
+    print("========== END DIAGNOSTIC ======================\n", flush=True)
+
     if not parsed_raw_questions:
         raise ValueError("No analyzable questions found in the provided input. Please check the question paper format.")
 

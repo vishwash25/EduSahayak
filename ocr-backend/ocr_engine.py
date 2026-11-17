@@ -23,7 +23,7 @@ class OCRComparer:
 
     def run_all(self, image_bytes: bytes):
         results = {}
-        
+
         image_np = np.frombuffer(image_bytes, np.uint8)
         img_cv2 = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
         img_pil = Image.open(io.BytesIO(image_bytes))
@@ -35,13 +35,13 @@ class OCRComparer:
             if pytesseract:
                 # Configure exact path for Windows Tesseract
                 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-                
+
                 data = pytesseract.image_to_data(img_pil, output_type=pytesseract.Output.DICT)
                 tes_text = pytesseract.image_to_string(img_pil)
                 detections = []
                 conf_sum = 0
                 conf_count = 0
-                
+
                 for i in range(len(data['text'])):
                     if int(data['conf'][i]) > 0:
                         conf = int(data['conf'][i])
@@ -57,7 +57,7 @@ class OCRComparer:
                                 round(data['height'][i] / height * 100, 2)
                             ]
                         })
-                
+
                 avg_conf = round(conf_sum / conf_count) if conf_count > 0 else 0
             else:
                 tes_text = "Dependency Missing: pytesseract not installed."
@@ -67,9 +67,9 @@ class OCRComparer:
             tes_text = f"Error: {str(e)}"
             detections = []
             avg_conf = 0
-        
+
         results['tesseract'] = {
-            "text": tes_text.strip(), 
+            "text": tes_text.strip(),
             "time": round((time.time() - start) * 1000),
             "confidence": avg_conf,
             "detections": detections
@@ -87,34 +87,34 @@ class OCRComparer:
 
                 # Use predict() if available (PaddleX v3.0 wrapper), fallback to ocr()
                 pad_result = self._paddle_reader.predict(img_cv2) if hasattr(self._paddle_reader, 'predict') else self._paddle_reader.ocr(img_cv2)
-                
+
                 pad_text_lines = []
                 detections = []
                 conf_sum = 0
                 count = 0
-                
+
                 # Support new PaddleX dict structure or classic tuple list
                 if pad_result and isinstance(pad_result[0], dict) and 'rec_texts' in pad_result[0]:
                     page = pad_result[0]
                     texts = page.get('rec_texts', [])
                     scores = page.get('rec_scores', [])
                     polys = page.get('rec_polys', [])
-                    
+
                     for i in range(len(texts)):
                         text = texts[i]
                         conf = scores[i]
                         poly = polys[i]
-                        
+
                         pad_text_lines.append(text)
                         conf_val = round(conf * 100)
                         conf_sum += conf_val
                         count += 1
-                        
+
                         top = float(np.min(poly[:, 1])) / height * 100
                         left = float(np.min(poly[:, 0])) / width * 100
                         w = float(np.max(poly[:, 0]) - np.min(poly[:, 0])) / width * 100
                         h = float(np.max(poly[:, 1]) - np.min(poly[:, 1])) / height * 100
-                        
+
                         detections.append({
                             "text": text,
                             "conf": conf_val,
@@ -127,18 +127,50 @@ class OCRComparer:
                         conf_val = round(conf * 100)
                         conf_sum += conf_val
                         count += 1
-                        
+
                         left = box[0][0] / width * 100
                         top = box[0][1] / height * 100
                         w = (box[1][0] - box[0][0]) / width * 100
                         h = (box[2][1] - box[0][1]) / height * 100
-                        
+
                         detections.append({
                             "text": text,
                             "conf": conf_val,
                             "box": [round(top, 2), round(left, 2), round(w, 2), round(h, 2)]
                         })
-                
+
+                # Reconstruct visual reading order using OCR bounding boxes.
+                valid_heights = [d["box"][3] for d in detections if d.get("box")]
+                median_height = float(np.median(valid_heights)) if valid_heights else 1.0
+                row_tolerance = max(0.6, median_height * 0.65)
+
+                sorted_detections = sorted(
+                    detections,
+                    key=lambda d: d["box"][0] + d["box"][3] / 2
+                )
+
+                row_groups = []
+                for detection in sorted_detections:
+                    center_y = detection["box"][0] + detection["box"][3] / 2
+
+                    if row_groups:
+                        previous_centers = [
+                            item["box"][0] + item["box"][3] / 2
+                            for item in row_groups[-1]
+                        ]
+                        row_center = sum(previous_centers) / len(previous_centers)
+
+                        if abs(center_y - row_center) <= row_tolerance:
+                            row_groups[-1].append(detection)
+                            continue
+
+                    row_groups.append([detection])
+
+                pad_text_lines = []
+                for row in row_groups:
+                    row.sort(key=lambda d: d["box"][1])
+                    pad_text_lines.extend(d["text"] for d in row)
+
                 pad_text = "\n".join(pad_text_lines)
                 avg_conf = round(conf_sum / count) if count > 0 else 0
             else:
@@ -147,12 +179,16 @@ class OCRComparer:
         except Exception as e:
             pad_text = f"Error: {str(e)}"
             detections, avg_conf = [], 0
-            
+
         results['paddleocr'] = {
-            "text": pad_text.strip(), 
+            "text": pad_text.strip(),
             "time": round((time.time() - start) * 1000),
             "confidence": avg_conf,
             "detections": detections
         }
 
+        print("\n========== PADDLE OCR COORDINATES ==========", flush=True)
+        for item in results.get("paddleocr", {}).get("detections", []):
+            print(f"BOX: {item.get('box')} | TEXT: {item.get('text')}", flush=True)
+        print("========== END OCR COORDINATES =============\n", flush=True)
         return results

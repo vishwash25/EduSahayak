@@ -1,170 +1,287 @@
-# EduSahayak - Bloom's Taxonomy Alignment Checker
+﻿# EduSahayak
+### AI-Assisted Academic Assessment and Evaluation Platform
 
-EduSahayak (ShikshakAI) is an academic assessment suite designed to assist educators in analyzing question papers, verifying cognitive taxonomy alignment, and processing academic documents.
+EduSahayak is an academic assessment platform designed to assist educators in analysing question papers, processing student answer scripts, evaluating responses and examining alignment with Revised Bloom's Taxonomy.
 
-This repository features the **Bloom's Taxonomy Alignment Checker**, which analyzes university examination question papers to verify whether the Bloom's Taxonomy level already assigned to each question matches its true cognitive demand according to the **Revised Bloom's Taxonomy (Anderson & Krathwohl, 2001)**.
-
----
-
-## 1. What the Bloom's Feature Does
-
-- **Question Paper Structure Detection**: Distinguishes between examination metadata (university name, department, semester, instructions, footers, page numbers) and actual questions/subquestions.
-- **Hierarchy Preservation**: Preserves question grouping and sub-question nesting (e.g., `Q1` &rarr; `Q1(a)`, `Q1(b)` &rarr; `i`, `ii`).
-- **Assigned Bloom's Level Extraction**: Automatically detects annotated tags in formats such as `[BL-3]`, `(BL-2)`, `Bloom's Level 1`, `Level 4`, `CO1/BL2`, etc.
-- **Cognitive Demand Assessment**: Leverages Groq LLM reasoning (LLaMA 3.3) to independently evaluate the true cognitive depth of each question, avoiding simplistic keyword/verb-matching pitfalls.
-- **Alignment Verification**: Compares the assigned level with the AI assessment to report clear match statuses:
-  - `MATCH`: Assigned level matches cognitive demand.
-  - `MISMATCH`: Assigned level differs from the actual cognitive depth.
-  - `NOT_SPECIFIED`: No Bloom level tag was annotated in the paper.
-  - `AMBIGUOUS`: Question is too brief or context-dependent to evaluate reliably.
-- **Summary & Detailed Rationale**: Generates concise summary metrics (total, matches, mismatches, unspecified, ambiguous) and observable academic justifications for each question.
+The project combines a Next.js web application with a Python FastAPI backend to provide document processing, OCR-assisted workflows, AI-supported evaluation and report generation.
 
 ---
 
-## 2. Supported Inputs
+## Key Features
 
-1. **Paste Plain Text**: Complete question paper text with questions, subquestions, and optional marks/Bloom tags.
-2. **Upload PDF**: Both digital text PDFs and scanned document PDFs (via automated high-resolution OCR rendering).
-3. **Upload Images**: Single or multi-page photographed/scanned question papers (PNG, JPG, JPEG, WEBP, TIFF, BMP).
+- **Question Paper Analysis:** Analyse question papers and identify their structure, questions and subquestions.
+- **Bloom's Taxonomy Analysis:** Examine cognitive levels using the Revised Bloom's Taxonomy framework.
+- **OCR Processing:** Extract text from scanned academic documents and images using configured OCR engines.
+- **Answer Evaluation:** Evaluate student responses against questions and expected answers.
+- **Single Question Evaluation:** Evaluate individual answers independently.
+- **Pro Mode:** Support advanced answer-script evaluation workflows.
+- **OCR Comparison:** Compare OCR output and support text enhancement.
+- **PDF Reports:** Generate and download evaluation reports.
+- **Academic Document Processing:** Work with supported PDF and image-based inputs.
 
----
-
-## 3. Revised Bloom's Taxonomy Reference
-
-| Level | Cognitive Process | Definition & Scope |
-|:-----:|:------------------|:-------------------|
-| **1** | **Remember** | Retrieving relevant knowledge from memory (recalling definitions, terms, facts without transformation). |
-| **2** | **Understand** | Constructing meaning from instructional messages (explaining concepts, summarizing, comparing mechanisms). |
-| **3** | **Apply** | Executing a standard procedure or implementing algorithms/calculations in a concrete scenario. |
-| **4** | **Analyze** | Breaking material into parts, determining relationships, analyzing time/space complexity bottlenecks. |
-| **5** | **Evaluate** | Making judgments based on criteria and standards, defending technical decisions, assessing trade-offs. |
-| **6** | **Create** | Synthesizing components into a novel whole, designing scalable architectures, formulating original algorithms. |
+*Available features depend on the configured AI providers, OCR engines and application settings.*
 
 ---
 
-## 4. Backend Architecture & Groq Configuration
+## Technology Stack
 
-- **Backend Framework**: FastAPI (Python 3.12)
-- **AI Provider**: Groq OpenAI-compatible API (`https://api.groq.com/openai/v1`)
-- **Default Model**: `openai/gpt-oss-120b` (configurable via environment variable)
+| Layer | Technologies |
+|---|---|
+| Frontend | Next.js 16, React 19, TypeScript |
+| Styling | Tailwind CSS |
+| Backend | Python, FastAPI |
+| AI integration | Groq API, Gemini API; additional provider integrations in applicable frontend routes |
+| OCR | Tesseract, EasyOCR, PaddleOCR |
+| Document processing | PyMuPDF, pypdfium2, Pillow, OpenCV |
+| PDF generation | FPDF2 |
+| Database integration | Supabase client integration |
 
-### Environment Variables
+---
 
-Create a `.env` file inside `ocr-backend/` (or set environment variables):
+## Project Architecture
+
+```text
+EduSahayak/
+│
+├── README.md
+│
+├── shikshak-ai/                 # Next.js frontend
+│   ├── app/
+│   │   ├── api/                 # Frontend API routes
+│   │   ├── components/
+│   │   ├── views/
+│   │   ├── login/
+│   │   └── page.tsx
+│   ├── components/
+│   ├── lib/
+│   ├── public/
+│   ├── utils/
+│   ├── package.json
+│   └── .env.example
+│
+└── ocr-backend/                 # Python FastAPI backend
+    ├── main.py
+    ├── bloom_analyzer.py
+    ├── evaluator_pro.py
+    ├── ocr_engine.py
+    ├── document_parser.py
+    ├── requirements.txt
+    ├── Dockerfile
+    ├── .env.example
+    └── static/
+```
+
+---
+
+## Backend API Endpoints
+
+The FastAPI backend currently exposes the following principal endpoints:
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/evaluate` | POST | Standard answer evaluation |
+| `/api/evaluate-single` | POST | Individual question evaluation |
+| `/api/evaluate-pro` | POST | Advanced evaluation workflow |
+| `/api/compare-ocr` | POST | OCR comparison |
+| `/api/enhance-text` | POST | Text enhancement |
+| `/api/generate-pdf` | POST | Generate PDF reports |
+| `/api/bloom/analyze` | POST | Analyse question paper text |
+| `/api/bloom/analyze-upload` | POST | Analyse uploaded question papers |
+| `/api/download-report/{filename}` | GET | Download generated reports |
+
+Interactive API documentation is available at:
+
+`http://127.0.0.1:8000/docs`
+
+---
+
+## Installation and Setup
+
+### Prerequisites
+
+Install the following:
+
+- Node.js and npm
+- Python 3.12 (recommended for the current development environment)
+- Git
+- Required OCR engines and their runtime dependencies
+- API credentials for the AI providers used by your selected features
+
+### 1. Clone the repository
 
 ```bash
-GROQ_API_KEY=your_groq_api_key_here
-GROQ_MODEL=openai/gpt-oss-120b
+git clone https://github.com/vishwash25/EduSahayak.git
+cd EduSahayak
 ```
 
-> **Security Note**: `GROQ_API_KEY` is loaded strictly on the backend and is never exposed to the frontend/client.
+### 2. Configure the backend
+
+```bash
+cd ocr-backend
+
+python -m venv venv
+```
+
+Activate the virtual environment.
+
+Windows PowerShell:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Create the backend environment file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Add your actual API credentials to `ocr-backend/.env`.
+
+Start the backend:
+
+```bash
+python main.py
+```
+
+The backend runs on:
+
+`http://127.0.0.1:8000`
+
+### 3. Configure the frontend
+
+Open a second terminal:
+
+```bash
+cd shikshak-ai
+```
+
+Install dependencies:
+
+```bash
+npm ci
+```
+
+Create the environment file:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Configure the required provider keys and backend URL in `.env.local`.
+
+### 4. Start the frontend
+
+```bash
+npm run dev
+```
+
+Open:
+
+`http://localhost:3000`
+
+Keep both the frontend and backend terminals running during local development.
 
 ---
 
-## 5. API Endpoints
+## Environment Variables
 
-### 1. `POST /api/bloom/analyze`
-Accepts a JSON payload with plain text.
+### Backend
 
-**Request Body**:
-```json
-{
-  "text": "Q1. What is OOP? (2 Marks) [BL-3]\nQ2. Design a banking system using OOP principles. (10 Marks) [BL-6]"
-}
+| Variable | Description |
+|---|---|
+| `GROQ_API_KEY` | Groq API authentication |
+| `GEMINI_API_KEY` | Gemini API authentication |
+| `GROQ_MODEL` | Optional Groq model override |
+
+### Frontend
+
+| Variable | Description |
+|---|---|
+| `PYTHON_BACKEND_URL` | FastAPI backend URL |
+| `GROQ_API_KEY` | Groq integration for applicable routes |
+| `GEMINI_API_KEY` | Gemini integration for applicable routes |
+| `ANTHROPIC_API_KEY` | Anthropic integration for applicable routes |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public client key |
+
+Never commit real API keys, `.env` files or other credentials to GitHub.
+
+---
+
+## Development Commands
+
+Run these commands from the `shikshak-ai` directory:
+
+```bash
+npm run dev
 ```
 
-### 2. `POST /api/bloom/analyze-upload`
-Accepts `multipart/form-data` for file uploads (PDF, images) or form text.
+Create a production build:
 
-**Form Parameters**:
-- `file`: (Optional) Single PDF or image file.
-- `files`: (Optional) Multiple image files for multi-page papers.
-- `text`: (Optional) Question paper text.
+```bash
+npm run build
+```
 
-### Expected Response Structure
+Run the production server:
 
-```json
-{
-  "status": "success",
-  "summary": {
-    "totalQuestions": 2,
-    "matches": 1,
-    "mismatches": 1,
-    "notSpecified": 0,
-    "ambiguous": 0
-  },
-  "questions": [
-    {
-      "questionNumber": "Q1",
-      "subQuestionNumber": null,
-      "fullIdentifier": "Q1",
-      "parentId": null,
-      "questionText": "What is OOP?",
-      "rawText": "Q1. What is OOP? (2 Marks) [BL-3]",
-      "marks": 2,
-      "assignedBloomLevel": 3,
-      "assignedBloomName": "Apply",
-      "aiBloomLevel": 2,
-      "aiBloomName": "Understand",
-      "status": "MISMATCH",
-      "confidence": 0.94,
-      "reason": "The question tests conceptual understanding of object-oriented concepts rather than requiring the student to apply a specific procedure."
-    },
-    {
-      "questionNumber": "Q2",
-      "subQuestionNumber": null,
-      "fullIdentifier": "Q2",
-      "parentId": null,
-      "questionText": "Design a banking system using OOP principles.",
-      "rawText": "Q2. Design a banking system using OOP principles. (10 Marks) [BL-6]",
-      "marks": 10,
-      "assignedBloomLevel": 6,
-      "assignedBloomName": "Create",
-      "aiBloomLevel": 6,
-      "aiBloomName": "Create",
-      "status": "MATCH",
-      "confidence": 0.96,
-      "reason": "Requires synthesizing components to design an original, multi-entity software architecture."
-    }
-  ],
-  "modelUsed": "openai/gpt-oss-120b"
-}
+```bash
+npm run start
+```
+
+Run lint checks:
+
+```bash
+npm run lint
 ```
 
 ---
 
-## 6. How to Run and Test
+## Academic Project Information
 
-### Starting the Server
-Navigate to the `ocr-backend` directory and run the FastAPI server:
+**Institution:** Nitte Meenakshi Institute of Technology, Bengaluru
 
-```powershell
-cd ocr-backend
-.\venv\Scripts\python.exe main.py
-```
-Or with uvicorn:
-```powershell
-.\venv\Scripts\uvicorn.exe main:app --host 0.0.0.0 --port 8000 --reload
-```
+**Department:** Information Science and Engineering
 
-Open your browser at:
-`http://localhost:8000`
+**Project:** EduSahayak
 
-### Running the Test Suite
-The project includes automated unit and integration tests covering:
-- Plain text classification
-- Subquestions & hierarchy extraction
-- Header, instruction, and footer filtering
-- PDF extraction
-- Missing Bloom's level handling
-- Mismatch detection
-- Ambiguous question handling
-- FastAPI endpoint responses
+**Team:** Team 18
 
-Run the test suite:
+| Team Member | USN |
+|---|---|
+| Prem Piyush | 1NT23IS165 |
+| Ayush Sikriwal | 1NT23IS041 |
+| Rishi Raj | 1NT23IS180 |
+| Vishwash Srivastava | 1NT23IS250 |
 
-```powershell
-cd ocr-backend
-.\venv\Scripts\python.exe test_bloom.py
-.\venv\Scripts\python.exe test_api_endpoints.py
-```
+**Project Guide:** Dr. Mohan S. G. — Head of Department
+
+**Co-Guide:** Dr. N. Jayanthi — Assistant Professor
+
+---
+
+## Future Scope
+
+Potential areas for further development include:
+
+- More comprehensive academic performance analytics.
+- Improved OCR accuracy for handwritten answer scripts.
+- Expanded question-paper and curriculum analysis.
+- Additional evaluation and reporting capabilities.
+- Further integration with academic information systems.
+
+---
+
+## Disclaimer
+
+EduSahayak is an academic assistance and evaluation project. AI-generated assessments should be reviewed by educators before being used for official academic decisions.
+
+---
+
+**EduSahayak — Making academic assessment more intelligent and efficient.**
