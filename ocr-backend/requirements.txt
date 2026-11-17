@@ -14,3 +14,6 @@ paddlepaddle>=2.6.2
 pypdfium2>=5.13.0
 httpx>=0.28.1
 Pillow>=10.0.0
+
+requests>=2.31.0
+PyMuPDF>=1.24.0
