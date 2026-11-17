@@ -110,8 +110,8 @@ Install the following:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/vishwash25/finalyear.git
-cd finalyear
+git clone https://github.com/vishwash25/EduSahayak.git
+cd EduSahayak
 ```
 
 ### 2. Configure the backend
