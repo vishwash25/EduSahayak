@@ -156,6 +156,33 @@ export default function LoginPage() {
     return ()=>{ window.removeEventListener("click",handleClick); window.removeEventListener("resize",handleResize); renderer?.dispose(); };
   }, [mounted]);
 
+  const handleGoogleLogin = async () => {
+    if (role === "student") {
+      alert("Student Google login is coming soon. Please select Teacher for now.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const redirectTo = `${window.location.origin}/auth/callback?role=teacher`;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: "offline",
+            prompt: "select_account",
+          },
+        },
+      });
+
+      if (error) throw error;
+    } catch (e: any) {
+      alert(e.message);
+      setLoading(false);
+    }
+  };
   const handleLogin = async () => {
     if (!email || !password) return alert("Please fill all fields");
     setLoading(true);
@@ -444,6 +471,30 @@ export default function LoginPage() {
                   : <>Have an account?{" "}<button onClick={()=>setMode("login")}>Sign in</button></>}
               </div>
 
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                style={{
+                  width: "100%",
+                  marginTop: "18px",
+                  padding: "13px",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: loading ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                }}
+              >
+                <span style={{ fontWeight: 700, fontSize: "17px" }}>G</span>
+                Continue with Google
+              </button>
               <div className="divr"><div className="divl"/><div className="divt">Secure</div><div className="divl"/></div>
               <div className="secr"><span className="secb">✓ SSL</span><span>256-bit · Supabase Auth</span></div>
             </div>
