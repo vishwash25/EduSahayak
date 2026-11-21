@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 const PYTHON_BACKEND = process.env.PYTHON_BACKEND_URL || "http://127.0.0.1:8080";
 
 // Allow up to 10 minutes for this route (Next.js default is 10s on some hosts)
-export const maxDuration = 600;
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   try {
