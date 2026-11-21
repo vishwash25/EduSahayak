@@ -2021,29 +2021,131 @@ tbody tr:last-child td{border-bottom:none;}
     alert("Quiz saved!");
   };
 
+  
   const generateAIQuiz = async () => {
     if (!aiQuizTopic.trim()) return alert("Enter a topic");
-    setAiGenLoading(true);
-    const prompt = `Create exactly ${aiQuizNum} multiple-choice questions on "${aiQuizTopic}" for ${qGrade} students. Difficulty: ${aiQuizDiff}.
 
-Return ONLY valid JSON array:
-[{"text":"<question>","options":["A","B","C","D"],"correct":<0-3>,"marks":1,"explanation":"<why correct>"}]
+    const totalQuestions = Number(aiQuizNum);
 
-Make sure options are complete sentences or phrases, not just letters. Mix difficulty within the set.`;
-    try {
-      const raw = await generateAILesson(prompt);
-      const clean = raw.replace(/```json|```/g, "").trim();
-      const match = clean.match(/\[[\s\S]*\]/);
-      if (!match) throw new Error("No JSON array found");
-      const parsed = JSON.parse(match[0]);
-      setQuestions(parsed.map((q: any) => ({ text: q.text || "", options: q.options || ["", "", "", ""], correct: q.correct || 0, marks: q.marks || 1, explanation: q.explanation || "" })));
-      alert(`${parsed.length} questions generated! Review them below and save.`);
-      setQuizView("create");
-    } catch (e: any) {
-      alert("AI generation failed: " + e.message);
+    if (!Number.isInteger(totalQuestions) || totalQuestions < 1 || totalQuestions > 30) {
+      return alert("Please select between 1 and 30 questions.");
     }
-    setAiGenLoading(false);
+
+    setAiGenLoading(true);
+
+    const allQuestions: any[] = [];
+    const batchSize = 5;
+
+    const parseQuestions = (raw: string): any[] => {
+      const clean = raw
+        .replace(/```json/gi, "")
+        .replace(/```/g, "")
+        .trim();
+
+      const start = clean.indexOf("[");
+      const end = clean.lastIndexOf("]");
+
+      if (start === -1 || end <= start) {
+        throw new Error("AI did not return a complete JSON array.");
+      }
+
+      const parsed = JSON.parse(clean.slice(start, end + 1));
+
+      if (!Array.isArray(parsed)) {
+        throw new Error("AI response is not a question array.");
+      }
+
+      return parsed.map((q: any) => {
+        if (
+          typeof q.text !== "string" ||
+          !q.text.trim() ||
+          !Array.isArray(q.options) ||
+          q.options.length !== 4 ||
+          q.options.some((option: any) => typeof option !== "string" || !option.trim()) ||
+          !Number.isInteger(q.correct) ||
+          q.correct < 0 ||
+          q.correct > 3
+        ) {
+          throw new Error("AI returned an invalid question. Please retry.");
+        }
+
+        return {
+          text: q.text.trim(),
+          options: q.options,
+          correct: q.correct,
+          marks: Number(q.marks) > 0 ? Number(q.marks) : 1,
+          explanation: typeof q.explanation === "string" ? q.explanation : ""
+        };
+      });
+    };
+
+    try {
+      for (let offset = 0; offset < totalQuestions; offset += batchSize) {
+        const count = Math.min(batchSize, totalQuestions - offset);
+        let batch: any[] | null = null;
+        let lastError: any = null;
+
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const prompt = `Generate exactly ${count} multiple-choice questions about "${aiQuizTopic}" for ${qGrade} students.
+
+Difficulty: ${aiQuizDiff}.
+
+This is batch ${Math.floor(offset / batchSize) + 1}.
+Return ONLY a valid JSON array. Do not use markdown fences or extra text.
+
+Every array item must follow this exact structure:
+{"text":"Question text","options":["Option A","Option B","Option C","Option D"],"correct":0,"marks":1,"explanation":"Explanation"}
+
+Rules:
+- Generate exactly ${count} questions.
+- Each question must have exactly four non-empty options.
+- "correct" must be an integer from 0 to 3.
+- Include a meaningful explanation.
+- Use plain text for mathematical expressions.
+- Do not use LaTeX, backslashes, or Unicode escape sequences.
+- Write equations using simple text, such as x^2 + 2x + 1.
+- Avoid unusual special characters.
+- Escape quotation marks inside JSON strings correctly.
+- Return strictly valid, complete JSON.`;
+
+            const raw = await generateAILesson(prompt);
+            const parsed = parseQuestions(raw);
+
+            if (parsed.length !== count) {
+              throw new Error(`Expected ${count} questions but received ${parsed.length}.`);
+            }
+
+            batch = parsed;
+            break;
+          } catch (error: any) {
+            lastError = error;
+          }
+        }
+
+        if (!batch) {
+          throw new Error(
+            `Could not generate batch ${Math.floor(offset / batchSize) + 1}: ${lastError?.message || "Unknown error"}`
+          );
+        }
+
+        allQuestions.push(...batch);
+      }
+
+      if (allQuestions.length !== totalQuestions) {
+        throw new Error(`Expected ${totalQuestions} questions, received ${allQuestions.length}.`);
+      }
+
+      setQuestions(allQuestions);
+      setQuizView("create");
+      alert(`${allQuestions.length} questions generated successfully! Review them below and save.`);
+    } catch (error: any) {
+      alert("AI quiz generation failed: " + (error?.message || "Please try again."));
+    } finally {
+      setAiGenLoading(false);
+    }
   };
+
 
   const startSession = (quiz: any) => {
     if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
