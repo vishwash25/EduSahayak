@@ -1,25 +1,40 @@
-﻿# EduSahayak
-### AI-Assisted Academic Assessment and Evaluation Platform
+# EduSahayak
+### AI-Assisted Academic Assessment and Learning Platform
 
-EduSahayak is an academic assessment platform designed to assist educators in analysing question papers, processing student answer scripts, evaluating responses and examining alignment with Revised Bloom's Taxonomy.
+**Live Demo:** https://edu-sahayak-xi.vercel.app  
+**Backend API:** https://edusahayak-backend.onrender.com  
+**GitHub:** https://github.com/vishwash25/EduSahayak
 
-The project combines a Next.js web application with a Python FastAPI backend to provide document processing, OCR-assisted workflows, AI-supported evaluation and report generation.
+EduSahayak is an AI-assisted academic platform designed to help educators and students create learning materials, analyse question papers, process answer scripts and evaluate academic responses. It combines a Next.js web application with a Python FastAPI backend for document processing, OCR-assisted workflows, AI-supported evaluation and report generation.
+
+The live application includes a read-only guest demo so visitors can explore the platform without modifying stored data.
 
 ---
 
 ## Key Features
 
-- **Question Paper Analysis:** Analyse question papers and identify their structure, questions and subquestions.
-- **Bloom's Taxonomy Analysis:** Examine cognitive levels using the Revised Bloom's Taxonomy framework.
-- **OCR Processing:** Extract text from scanned academic documents and images using configured OCR engines.
+### AI-powered learning and assessment
+- **AI Chat:** Ask academic questions and get AI-generated assistance.
+- **AI Quiz Generator:** Generate multiple-choice quizzes with up to 30 questions, four options per question, correct answers and explanations. Generated questions can be reviewed and edited.
+- **AI Text Enhancer:** Improve and refine academic text.
 - **Answer Evaluation:** Evaluate student responses against questions and expected answers.
 - **Single Question Evaluation:** Evaluate individual answers independently.
 - **Pro Mode:** Support advanced answer-script evaluation workflows.
+
+### Document and question-paper tools
+- **Question Paper Analysis:** Analyse question papers and identify their structure, questions and subquestions.
+- **Bloom's Taxonomy Checker:** Examine cognitive levels using the Revised Bloom's Taxonomy framework.
+- **OCR Processing:** Extract text from scanned academic documents and images using configured OCR engines.
 - **OCR Comparison:** Compare OCR output and support text enhancement.
-- **PDF Reports:** Generate and download evaluation reports.
+- **PDF Generator:** Generate and download PDF reports.
 - **Academic Document Processing:** Work with supported PDF and image-based inputs.
 
-*Available features depend on the configured AI providers, OCR engines and application settings.*
+### Access and deployment
+- **Guest Demo Mode:** Explore the application in read-only mode.
+- **Responsive Web Application:** Access the platform through a modern web browser on desktop or mobile.
+- **Cloud Deployment:** Frontend hosted on Vercel and Python backend hosted on Render.
+
+*Available features depend on the configured AI providers, OCR engines and application settings. The Render free service may take some time to wake after a period of inactivity.*
 
 ---
 
@@ -34,7 +49,9 @@ The project combines a Next.js web application with a Python FastAPI backend to 
 | OCR | Tesseract, EasyOCR, PaddleOCR |
 | Document processing | PyMuPDF, pypdfium2, Pillow, OpenCV |
 | PDF generation | FPDF2 |
-| Database integration | Supabase client integration |
+| Database integration | Supabase |
+| Frontend hosting | Vercel |
+| Backend hosting | Render |
 
 ---
 
@@ -89,7 +106,7 @@ The FastAPI backend currently exposes the following principal endpoints:
 | `/api/bloom/analyze-upload` | POST | Analyse uploaded question papers |
 | `/api/download-report/{filename}` | GET | Download generated reports |
 
-Interactive API documentation is available at:
+Interactive API documentation for local development is available at:
 
 `http://127.0.0.1:8000/docs`
 
@@ -118,7 +135,6 @@ cd EduSahayak
 
 ```bash
 cd ocr-backend
-
 python -m venv venv
 ```
 
@@ -160,11 +176,6 @@ Open a second terminal:
 
 ```bash
 cd shikshak-ai
-```
-
-Install dependencies:
-
-```bash
 npm ci
 ```
 
@@ -211,7 +222,7 @@ Keep both the frontend and backend terminals running during local development.
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public client key |
 
-Never commit real API keys, `.env` files or other credentials to GitHub.
+Never commit real API keys, `.env` files or other credentials to GitHub. Configure production environment variables in the hosting provider's dashboard.
 
 ---
 
