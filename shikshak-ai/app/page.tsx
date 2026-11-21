@@ -443,7 +443,7 @@ const NAV_TOOLS = [
   { id: "blooms", icon: "🧠", label: "Bloom's Taxonomy", badge: "AI" },
   { id: "lesson", icon: "📋", label: "Lesson Planner" },
   { id: "study", icon: "🔬", label: "Study Tool" },
-  { id: "paper", icon: "📄", label: "Document AI", badge: "AI" },
+  { id: "paper", icon: "📄", label: "OCR Paper Evaluator", badge: "AI" },
   { id: "glossary", icon: "📖", label: "Smart Glossary", badge: "NEW" },
 ];
 const GRADE_GROUPS = [
@@ -3276,7 +3276,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
             <>
               <div className="page-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
                 <div>
-                  <h1 className="page-title">Document AI</h1>
+                  <h1 className="page-title">OCR Paper Evaluator</h1>
                   <p className="page-sub">
                     {evalPhase === "scan" && "Upload a handwritten PDF or image — AI reads & evaluates intelligently"}
                     {evalPhase === "action" && "✓ Scan complete — fill in exam details below to evaluate"}

@@ -309,7 +309,7 @@ export default function GlossaryPage() {
                   <div style={{ fontSize: 14, fontWeight: 600, color: "#f0f0ff", marginBottom: 6 }}>Drop PDF here or click to browse</div>
                   <div style={{ fontSize: 11, color: "#4a4a72", lineHeight: 1.6 }}>
                     Works with textbooks, notes, slides — any <strong style={{ color: "#9090b8" }}>computer-typed</strong> PDF.<br />
-                    For handwritten/scanned PDFs, use the <strong style={{ color: "#9090b8" }}>Document AI</strong> OCR feature instead.
+                    For handwritten/scanned PDFs, use the <strong style={{ color: "#9090b8" }}>OCR Paper Evaluator</strong> OCR feature instead.
                   </div>
                 </>
               )}
