@@ -183,6 +183,10 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+  const handleGuestLogin = () => {
+    sessionStorage.setItem("edusahayak_guest_mode", "true");
+    router.push("/");
+  };
   const handleLogin = async () => {
     if (!email || !password) return alert("Please fill all fields");
     setLoading(true);
@@ -495,6 +499,27 @@ export default function LoginPage() {
                 <span style={{ fontWeight: 700, fontSize: "17px" }}>G</span>
                 Continue with Google
               </button>
+              {mode === "login" && (
+                <button
+                  type="button"
+                  onClick={handleGuestLogin}
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                    padding: "13px",
+                    borderRadius: "10px",
+                    border: "1px solid rgba(124,111,255,0.35)",
+                    background: "rgba(124,111,255,0.10)",
+                    color: "white",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  Continue as Guest — Explore Demo
+                </button>
+              )}
               <div className="divr"><div className="divl"/><div className="divt">Secure</div><div className="divl"/></div>
               <div className="secr"><span className="secb">✓ SSL</span><span>256-bit · Supabase Auth</span></div>
             </div>

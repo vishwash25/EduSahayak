@@ -973,6 +973,7 @@ export default function Page() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   // AI Co-Teacher Sidecar
   const [coTeacherOpen, setCoTeacherOpen] = useState(false);
@@ -1081,8 +1082,88 @@ export default function Page() {
 
   // ── AUTH ──
   const checkUser = async () => {
+    const guestMode = sessionStorage.getItem("edusahayak_guest_mode") === "true";
+
+    if (guestMode) {
+      setIsGuest(true);
+
+      setStudents([
+        { id: 9001, name: "Aarav Sharma", grade: "Grade 10", avg: 92 },
+        { id: 9002, name: "Diya Patel", grade: "Grade 10", avg: 86 },
+        { id: 9003, name: "Kabir Verma", grade: "Grade 9", avg: 74 },
+        { id: 9004, name: "Ananya Rao", grade: "Grade 9", avg: 48 },
+        { id: 9005, name: "Rohan Mehta", grade: "Grade 10", avg: 63 }
+      ]);
+
+      setAttendanceSummary({
+        "9001": { present: 18, absent: 2 },
+        "9002": { present: 19, absent: 1 },
+        "9003": { present: 16, absent: 4 },
+        "9004": { present: 14, absent: 6 },
+        "9005": { present: 17, absent: 3 }
+      });
+
+      setAnnouncements([
+        {
+          id: 9901,
+          title: "Welcome to EduSahayak Demo",
+          body: "Explore sample classroom announcements, student records and teaching tools in Guest Mode.",
+          type: "info",
+          target: "all",
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 9902,
+          title: "Mathematics Unit Test",
+          body: "The sample Mathematics assessment is scheduled for Friday. Revise algebra and geometry.",
+          type: "homework",
+          target: "all",
+          created_at: new Date(Date.now() - 86400000).toISOString()
+        }
+      ]);
+
+      setQuizzes([
+        {
+          id: 9901,
+          title: "Mathematics Demo Quiz",
+          subject: "Mathematics",
+          grade: "Grade 10",
+          duration: 15,
+          passMark: 50,
+          createdAt: new Date().toISOString(),
+          totalMarks: 2,
+          questions: [
+            {
+              text: "What is the value of 12 × 8?",
+              options: ["86", "96", "108", "112"],
+              correct: 1,
+              marks: 1,
+              explanation: "12 multiplied by 8 equals 96."
+            },
+            {
+              text: "Which of these is a prime number?",
+              options: ["21", "27", "29", "33"],
+              correct: 2,
+              marks: 1,
+              explanation: "29 has exactly two factors: 1 and 29."
+            }
+          ]
+        }
+      ]);
+
+      setSessions([]);
+      return;
+    }
+
     const { data } = await supabase.auth.getSession();
-    if (!data.session) router.push("/login");
+
+    if (!data.session) {
+      router.push("/login");
+      return;
+    }
+
+    fetchStudents();
+    loadQuizzes();
   };
 
   // ── DATA FETCH ──
@@ -1094,7 +1175,7 @@ export default function Page() {
   };
 
   const fetchAttendanceSummary = useCallback(async () => {
-    if (!students.length) return;
+    if (isGuest || !students.length) return;
     const ids = students.map(s => s.id);
     const { data, error } = await supabase.from("attendance").select("student_id,status,date").in("student_id", ids).order("date", { ascending: false });
     if (error || !data) return;
@@ -1107,10 +1188,11 @@ export default function Page() {
       else summary[k].absent++;
     });
     setAttendanceSummary(summary);
-  }, [students]);
+  }, [students, isGuest]);
 
   const fetchAnnouncements = async () => {
-    const { data: u } = await supabase.auth.getUser();
+    if (isGuest) return;
+const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     const { data } = await supabase.from("announcements").select("*").eq("user_id", u.user.id).order("created_at", { ascending: false });
     if (data) setAnnouncements(data);
@@ -1127,11 +1209,13 @@ export default function Page() {
   }, []);
 
   const saveQuizzes = (updated: any[]) => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     setQuizzes(updated);
     try { localStorage.setItem("edu_quizzes", JSON.stringify(updated)); } catch { }
   };
 
   const saveSessions = (updated: any[]) => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     setSessions(updated);
     try { localStorage.setItem("edu_sessions", JSON.stringify(updated)); } catch { }
   };
@@ -1139,14 +1223,13 @@ export default function Page() {
   useEffect(() => {
     setDate(new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }));
     checkUser();
-    fetchStudents();
-    loadQuizzes();
   }, []);
   useEffect(() => { fetchAttendanceSummary(); }, [fetchAttendanceSummary]);
   useEffect(() => { if (page === "announcements") fetchAnnouncements(); }, [page]);
 
   // ── STUDENTS CRUD ──
   const addStudent = async () => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     if (!name.trim() || !grade || !avg) return alert("Fill all fields");
     const numAvg = Number(avg);
     if (isNaN(numAvg) || numAvg < 0 || numAvg > 100) return alert("Average must be 0–100");
@@ -1162,6 +1245,7 @@ export default function Page() {
   };
 
   const deleteStudent = async (id: number) => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     if (!confirm("Delete this student? All their data will be removed.")) return;
     await supabase.from("attendance").delete().eq("student_id", id);
     await supabase.from("students").delete().eq("id", id);
@@ -1216,7 +1300,7 @@ Write:
 
   // ── ATTENDANCE ──
   const saveAttendance = async () => {
-    if (!students.length) return;
+    if (isGuest || !students.length) return;
     const records = students.map(id => ({
       student_id: id.id,
       status: attendance[id.id] || "Present",
@@ -1877,6 +1961,7 @@ tbody tr:last-child td{border-bottom:none;}
 
   // ── ANNOUNCEMENTS ──
   const postAnnouncement = async () => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     if (!annTitle.trim() || !annBody.trim()) return alert("Fill title and message");
     setLoading(true);
     try {
@@ -1888,6 +1973,7 @@ tbody tr:last-child td{border-bottom:none;}
   };
 
   const deleteAnnouncement = async (id: number) => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     await supabase.from("announcements").delete().eq("id", id);
     fetchAnnouncements();
   };
@@ -1912,6 +1998,7 @@ tbody tr:last-child td{border-bottom:none;}
   const removeQuestion = (qi: number) => setQuestions(prev => prev.filter((_, i) => i !== qi));
 
   const saveQuiz = () => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     if (!qTitle.trim()) return alert("Enter quiz title");
     if (questions.length === 0) return alert("Add at least one question");
     if (questions.some(q => !q.text.trim())) return alert("All questions need text");
@@ -1959,6 +2046,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
   };
 
   const startSession = (quiz: any) => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     const session = {
       id: Date.now(),
       quizId: quiz.id,
@@ -1975,10 +2063,12 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
   };
 
   const startStudentTest = () => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     setShowProctoredQuiz(true);
   };
 
   const handleQuizComplete = (result: any) => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     setShowProctoredQuiz(false);
     if (!activeQuiz) return;
     const percentage = Math.round((result.correct / result.total) * 100);
@@ -2008,6 +2098,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
   };
 
   const endSession = () => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     if (!activeSession) return;
     const updatedSessions = sessions.map(s => s.id === activeSession.id ? { ...s, active: false, endedAt: new Date().toISOString() } : s);
     saveSessions(updatedSessions);
@@ -2017,6 +2108,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
   };
 
   const deleteQuiz = (id: number) => {
+    if (isGuest) { alert("Guest Mode is read-only. Sign in to make changes."); return; }
     if (!confirm("Delete this quiz?")) return;
     saveQuizzes(quizzes.filter(q => q.id !== id));
   };
@@ -2025,7 +2117,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
   const classAvg = useMemo(() => {
     if (!students.length) return 0;
     return Math.round(students.reduce((a, s) => a + Number(s.avg), 0) / students.length);
-  }, [students]);
+  }, [students, isGuest]);
 
   const gradeDistribution = useMemo(() => {
     const dist = [{ name: "A+ (90+)", val: 0 }, { name: "A (80-89)", val: 0 }, { name: "B (70-79)", val: 0 }, { name: "C (60-69)", val: 0 }, { name: "D (50-59)", val: 0 }, { name: "F (<50)", val: 0 }];
@@ -2034,7 +2126,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
       if (a >= 90) dist[0].val++; else if (a >= 80) dist[1].val++; else if (a >= 70) dist[2].val++; else if (a >= 60) dist[3].val++; else if (a >= 50) dist[4].val++; else dist[5].val++;
     });
     return dist.filter(d => d.val > 0).map(d => ({ ...d, Students: d.val }));
-  }, [students]);
+  }, [students, isGuest]);
 
   const attendanceChartData = useMemo(() => {
     return students.map(s => {
@@ -2227,7 +2319,14 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
     setPage("paper");
   };
 
-  const logout = async () => { await supabase.auth.signOut(); router.push("/login"); };
+  const logout = async () => {
+    if (isGuest) {
+      sessionStorage.removeItem("edusahayak_guest_mode");
+    } else {
+      await supabase.auth.signOut();
+    }
+    router.push("/login");
+  };
   const es: EvalStep = evalStep;
 
   // ─────────────────────────────────────────────────────
@@ -2291,12 +2390,18 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
             ))}
           </nav>
           <div className="sidebar-bottom">
+            {isGuest && (
+              <div style={{ padding: "10px 12px", marginBottom: 12, borderRadius: 10, background: "rgba(0,219,160,0.09)", border: "1px solid rgba(0,219,160,0.25)" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent3)", letterSpacing: 1 }}>GUEST MODE</div>
+                <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 4 }}>Demo data · Read only</div>
+              </div>
+            )}
             <div className="sidebar-user-card">
               <div className="sidebar-user-label">Class Summary</div>
               <div className="sidebar-user-info">{students.length} students · {classAvg}% avg</div>
               <div className="sidebar-user-sub">{quizzes.length} quiz{quizzes.length !== 1 ? "zes" : ""} created</div>
             </div>
-            <button onClick={logout} className="logout-btn"><span className="nav-icon">🚪</span><span className="logout-label">Sign Out</span></button>
+            <button onClick={logout} className="logout-btn"><span className="nav-icon">🚪</span><span className="logout-label">{isGuest ? "Exit Guest Mode" : "Sign Out"}</span></button>
           </div>
         </aside>
 
@@ -2369,7 +2474,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
                 </div>
                 <table className="data-table">
                   <thead>
-                    <tr><th>Student Name</th><th>Grade/Year</th><th>Average</th><th>Status</th><th>Action</th></tr>
+                    <tr><th>Student Name</th><th>Grade/Year</th><th>Average</th><th>Status</th>{!isGuest && <th>Action</th>}</tr>
                   </thead>
                   <tbody>
                     {students.map(s => (
@@ -2382,9 +2487,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
                             {Number(s.avg) >= 75 ? "✓ Good" : Number(s.avg) >= 50 ? "△ Average" : "⚠ Weak"}
                           </span>
                         </td>
-                        <td>
-                          <button onClick={() => deleteStudent(s.id)} className="btn-ghost btn-sm">Remove</button>
-                        </td>
+                        {!isGuest && (<td><button onClick={() => deleteStudent(s.id)} className="btn-ghost btn-sm">Remove</button></td>)}
                       </tr>
                     ))}
                     {!students.length && (
@@ -2393,7 +2496,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
                   </tbody>
                 </table>
                 <hr className="divider" />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 120px 100px", gap: 12, alignItems: "flex-end" }}>
+                <div style={{ display: isGuest ? "none" : "grid", gridTemplateColumns: "1fr 1fr 120px 100px", gap: 12, alignItems: "flex-end" }}>
                   <div className="field-group" style={{ marginBottom: 0 }}>
                     <label className="field-label">Student Name</label>
                     <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && addStudent()} className="field-input" placeholder="Aarav Shah" />
@@ -2583,7 +2686,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
                   )}
                 </div>
               )}
-              <div className="panel">
+              <div className="panel" style={{ display: isGuest ? "none" : "block" }}>
                 <div className="panel-title" style={{ justifyContent: "space-between", flexWrap: "wrap" as const, gap: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 9 }}><span>✦</span> Mark Attendance</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2641,7 +2744,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
               {/* ─── QUIZ LIST ─── */}
               {quizView === "list" && (
                 <>
-                  <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+                  <div style={{ display: isGuest ? "none" : "flex", gap: 10, marginBottom: 20 }}>
                     <button onClick={() => setQuizView("create")} className="btn-primary">+ Create Quiz</button>
                     <button onClick={() => setQuizView("ai-gen")} className="btn-gold">✦ AI Generate Quiz</button>
                   </div>
@@ -2683,7 +2786,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
                             <span style={{ fontSize: 11, color: "var(--muted)", background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 10px" }}>✓ Pass: {quiz.passMark}%</span>
                             <span style={{ fontSize: 11, color: "var(--accent3)", background: "rgba(0,219,160,0.07)", border: "1px solid rgba(0,219,160,0.18)", borderRadius: 6, padding: "3px 10px" }}>🔒 Proctored</span>
                           </div>
-                          <div style={{ display: "flex", gap: 8 }}>
+                          <div style={{ display: isGuest ? "none" : "flex", gap: 8 }}>
                             <button onClick={() => startSession(quiz)} className="btn-primary btn-sm" style={{ flex: 1 }}>▶ Start Session</button>
                             <button onClick={() => deleteQuiz(quiz.id)} className="btn-danger btn-sm">Delete</button>
                           </div>
@@ -2723,7 +2826,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
               {/* ─── AI GENERATE ─── */}
               {quizView === "ai-gen" && (
                 <>
-                  <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+                  <div style={{ display: isGuest ? "none" : "flex", gap: 10, marginBottom: 20 }}>
                     <button onClick={() => setQuizView("list")} className="btn-ghost">← Back to Quizzes</button>
                   </div>
                   <div className="panel">
@@ -2774,7 +2877,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
               {/* ─── CREATE / EDIT QUIZ ─── */}
               {quizView === "create" && (
                 <>
-                  <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+                  <div style={{ display: isGuest ? "none" : "flex", gap: 10, marginBottom: 20 }}>
                     <button onClick={() => setQuizView("list")} className="btn-ghost">← Back</button>
                     <button onClick={saveQuiz} className="btn-success">💾 Save Quiz</button>
                   </div>
@@ -3496,7 +3599,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
                     <div className="panel" style={{ animationDelay: "0.1s" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
                         <div className="panel-title" style={{ marginBottom: 0 }}><span>📑</span> Scanned Pages ({ocrPageData.length})</div>
-                        <div style={{ display: "flex", gap: 8 }}>
+                        <div style={{ display: isGuest ? "none" : "flex", gap: 8 }}>
                           <button onClick={enhanceOcrText} disabled={ocrEnhLoading} className="btn-primary btn-sm">{ocrEnhLoading ? "Fixing…" : "🪄 Fix OCR Errors"}</button>
                         </div>
                       </div>
@@ -3931,7 +4034,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
                         <span>📋</span> Question Breakdown
                         {questionPaperFile ? <span className="source-badge source-paper" style={{ marginLeft: 8 }}>📃 From Paper</span> : <span className="source-badge source-dist" style={{ marginLeft: 8 }}>🧠 Inferred</span>}
                       </div>
-                      <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ display: isGuest ? "none" : "flex", gap: 8 }}>
                         <button onClick={downloadReportCard} className="btn-success" style={{ fontSize: 11.5 }}>⬇ Report Card</button>
                         <button onClick={() => { setEvalStep("idle"); setEvaluation(null); }} className="btn-ghost" style={{ fontSize: 11.5 }}>↺ New</button>
                       </div>
@@ -4045,7 +4148,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
                 <h1 className="page-title">Announcements</h1>
                 <p className="page-sub">Post notices, homework, events and urgent messages</p>
               </div>
-              <div className="panel">
+              <div className="panel" style={{ display: isGuest ? "none" : "block" }}>
                 <div className="panel-title"><span>✍️</span> New Announcement</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
                   <div className="field-group" style={{ marginBottom: 0 }}>
@@ -4096,7 +4199,7 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
                       <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, fontWeight: 300 }}>{ann.body}</div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
                         <span style={{ fontSize: 11, color: "var(--muted)" }}>→ {ann.target === "all" ? "All Students" : students.find(s => String(s.id) === ann.target)?.name || "Student"}</span>
-                        <button onClick={() => deleteAnnouncement(ann.id)} className="btn-ghost" style={{ fontSize: 11, padding: "5px 12px" }}>Delete</button>
+                        {!isGuest && <button onClick={() => deleteAnnouncement(ann.id)} className="btn-ghost" style={{ fontSize: 11, padding: "5px 12px" }}>Delete</button>}
                       </div>
                     </div>
                   ))
@@ -4107,13 +4210,17 @@ Make sure options are complete sentences or phrases, not just letters. Mix diffi
 
           {/* ═══ SMART GLOSSARY CREATOR ═══ */}
           {page === "glossary" && (
-            <GlossaryPage />
-          )}
+  isGuest
+    ? <div className="panel"><div className="panel-title">Guest Mode · Read Only</div><p className="page-sub">The Glossary PDF processing tool is available after signing in.</p></div>
+    : <GlossaryPage />
+)}
 
           {/* ═══ BLOOM'S TAXONOMY ALIGNMENT ENGINE ═══ */}
           {page === "blooms" && (
-            <BloomsView />
-          )}
+  isGuest
+    ? <div className="panel"><div className="panel-title">Guest Mode · Read Only</div><p className="page-sub">Bloom's Taxonomy analysis and document processing are available after signing in.</p></div>
+    : <BloomsView />
+)}
 
 
 
