@@ -9,6 +9,17 @@ EduSahayak is an AI-assisted academic platform designed to help educators and st
 
 The live application includes a read-only guest demo so visitors can explore the platform without modifying stored data.
 
+## Latest Update — v1.3.0
+
+The v1.3.0 update improves the Bloom's Taxonomy Checker with **question-first cognitive classification**:
+
+- Assesses the complete question and the cognitive work needed to answer it, rather than assigning a level from an isolated command verb.
+- Considers scenarios, conditions, constraints, sub-questions and the expected deliverable.
+- Uses the selected subject/domain and target academic level as classification context.
+- Distinguishes routine use of a familiar method from genuine analysis, criteria-based evaluation and original creation.
+- Shows the predicted Bloom level with a confidence estimate and a question-specific rationale.
+- Removes the separate Action Verb label from question cards while retaining the other analysis details.
+
 ---
 
 ## Key Features
@@ -23,7 +34,7 @@ The live application includes a read-only guest demo so visitors can explore the
 
 ### Document and question-paper tools
 - **Question Paper Analysis:** Analyse question papers and identify their structure, questions and subquestions.
-- **Bloom's Taxonomy Checker:** Examine cognitive levels using the Revised Bloom's Taxonomy framework.
+- **Bloom's Taxonomy Checker:** Analyse question papers using all six Revised Bloom's Taxonomy levels. The question-first approach considers the full question, its sub-parts and academic context; command verbs are treated as contextual clues, not automatic level selectors. Results include the predicted level, confidence and rationale.
 - **OCR Processing:** Extract text from scanned academic documents and images using configured OCR engines.
 - **OCR Comparison:** Compare OCR output and support text enhancement.
 - **PDF Generator:** Generate and download PDF reports.
