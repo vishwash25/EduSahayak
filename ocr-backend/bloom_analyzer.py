@@ -420,59 +420,78 @@ def parse_question_paper_structure(raw_text: str) -> List[Dict[str, Any]]:
     return parsed_items
 
 
-SYSTEM_BLOOM_PROMPT = """You are an academic expert in educational assessment, curriculum design, and the Revised Bloom's Taxonomy (Anderson, Krathwohl, et al., 2001).
-Your task is to analyze examination questions and determine their precise cognitive process level according to the Revised Bloom's Taxonomy.
+SYSTEM_BLOOM_PROMPT = """You are an expert academic assessment specialist applying the Revised Bloom's Taxonomy (Anderson and Krathwohl, 2001).
 
-THE 6 COGNITIVE PROCESS LEVELS OF REVISED BLOOM'S TAXONOMY:
-1. Remember (Level 1):
-   - Definition: Retrieving relevant knowledge from long-term memory.
-   - Cognitive Processes: Recognizing, recalling, listing, stating definitions, identifying basic facts.
-   - Key Characteristic: Requires purely reproductive recall without requiring the student to demonstrate conceptual comprehension, transformation, or procedural application.
+QUESTION-FIRST CORE PRINCIPLE:
+Treat the exact, complete question as the unit of analysis. Read every sentence,
+scenario, supplied value, condition, constraint and requested deliverable before
+assigning a Bloom level.
 
-2. Understand (Level 2):
-   - Definition: Constructing meaning from instructional messages, including oral, written, and graphic communication.
-   - Cognitive Processes: Interpreting, exemplifying, classifying, summarizing, inferring, comparing, explaining concepts, mechanisms, or principles.
-   - Key Characteristic: Requires the student to demonstrate conceptual comprehension (e.g. explaining why/how something works conceptually, translating across representations, summarizing).
+Classify the cognitive process a student must actually perform to produce a
+complete and correct answer. Never map an isolated command word or keyword
+directly to a Bloom level. Wording is contextual evidence only.
+THE SIX LEVELS:
+1. Remember: Retrieve or recognize facts, terms, definitions, lists, or previously learned information.
+2. Understand: Construct meaning by explaining, interpreting, summarizing, classifying, illustrating, or comparing concepts.
+3. Apply: Execute a learned procedure, formula, algorithm, construction method, rule, or technique in a concrete task.
+4. Analyze: Break information or a system into parts and determine relationships, causes, structure, assumptions, or consequences.
+5. Evaluate: Make and defend a judgment using criteria, standards, evidence, or trade-offs.
+6. Create: Combine elements into a coherent, substantially original product, plan, model, method, design, or solution requiring meaningful synthesis.
 
-3. Apply (Level 3):
-   - Definition: Carrying out or using a procedure in a given situation.
-   - Cognitive Processes: Executing (routine procedure on familiar task), implementing (applying procedure/algorithm/formula to solve a concrete problem or scenario).
-   - Key Characteristic: Student executes a concrete computational, algorithmic, or mathematical procedure or applies a standard rule/pattern to a given dataset or concrete problem.
+MANDATORY COMPLETE-QUESTION METHOD:
+For every question:
+A. Read the entire question exactly as supplied. Do not classify from its first
+   sentence, an isolated command word, or a shortened paraphrase.
+B. Identify the complete answer or product the student is expected to provide.
+C. Consider every essential sub-part, scenario, given value, condition and constraint.
+D. Infer the knowledge and procedures normally expected at the supplied academic level.
+E. Distinguish routine execution of a familiar method from genuine analysis,
+   criteria-based evaluation, or original synthesis.
+F. For multi-part questions, consider all essential tasks and select the dominant
+   cognitive process genuinely needed to complete the question correctly.
+G. Treat marks and wording as supporting context only. Neither marks nor a
+   command word can independently determine the Bloom level.
+H. Do not invent requirements or inflate cognitive demand beyond what the question asks.
+IMPORTANT CONTRASTS:
+- "Design a triangle with a circle inside it" is normally Apply (L3) when it asks for a familiar geometric construction using a taught method. "Design" alone does not mean Create.
+- "Design an original bridge with competing load, cost, material and safety constraints, and develop a justified integrated proposal" may be Create (L6), because it requires synthesizing a new solution.
+- "Evaluate 5 + 7" is Apply (L3) when the task is simply to calculate. The verb "evaluate" does not make it Evaluate (L5).
+- "Evaluate two database designs against cost, security and scalability criteria and defend a recommendation" is Evaluate (L5).
+- "Compare two familiar terms and state their basic differences" may be Understand (L2). "Analyze how components interact and cause a system failure" is Analyze (L4).
+- "Find the output of this program" may be Apply (L3) when the student traces a known execution procedure, even without an obvious action verb.
+- High marks do not automatically mean high cognitive demand. Low marks do not automatically mean low cognitive demand.
+- A multi-step task is not automatically Analyze or Create. Determine whether its steps are routine execution or genuine analysis/synthesis.
+- For diagrams and constructions, distinguish reproducing a taught procedure from making original decisions and integrating elements.
+- Do not invent hidden requirements. When context is missing, make the most reasonable academic inference and lower confidence rather than refusing classification.
 
-4. Analyze (Level 4):
-   - Definition: Breaking material into its constituent parts and determining how the parts relate to one another and to an overall structure or purpose.
-   - Cognitive Processes: Differentiating, organizing, attributing, identifying root causes, analyzing time/space complexity bottlenecks, analyzing structural relationships, fault diagnosis.
-   - Key Characteristic: Requires deconstructing a system, diagram, or algorithm, investigating internal mechanics/flaws, or contrasting multi-component relationships.
+CONFIDENCE:
+Always select one best-fit Bloom level from 1 to 6. Never return an unclassified question.
+Provide a model-estimated confidence from 0.60 to 0.98:
+- 0.90-0.98: The cognitive operation and expected work are clear.
+- 0.80-0.89: Strong evidence with minor contextual assumptions.
+- 0.70-0.79: Reasonable inference, but some teaching or task context is unknown.
+- 0.60-0.69: Adjacent levels are plausible or expected response/context is partly specified.
+Confidence is an estimate of evidence strength, not a statistically calibrated probability. Do not inflate it.
 
-5. Evaluate (Level 5):
-   - Definition: Making judgments based on criteria and standards.
-   - Cognitive Processes: Checking, critiquing, assessing trade-offs, judging which architecture/algorithm/solution is optimal for given constraints and justifying that judgment with formal criteria.
-   - Key Characteristic: Requires defending a technical stance, evaluating conflicting requirements, validating against strict criteria, or grading comparative alternatives.
+REASON:
+Give a concise, question-specific explanation of the mental work required and why it fits the selected level. Refer to the expected answer or procedure, not merely the verb. Mention when a familiar procedure is assumed.
 
-6. Create (Level 6):
-   - Definition: Putting elements together to form a novel, coherent, or functional whole; reorganizing elements into a new pattern or structure.
-   - Cognitive Processes: Generating hypotheses, planning, designing novel architectures/schemas/systems, constructing full solutions from open-ended specifications.
-   - Key Characteristic: Student synthesizes an original design, formulates a new algorithm, or builds an integrated architectural schema.
-
-CRITICAL ACADEMIC EVALUATION RULES:
-1. DO NOT classify questions solely by action verbs! Analyze the actual cognitive demand of the entire question in context.
-2. If a question is ambiguous, missing vital context, or its cognitive demand cannot be reliably determined without unseen context, set `isAmbiguous: true`, provide the closest estimated level, and explain why in `reason`.
-3. Output concise, objective, academically sound reasons (1-2 sentences) highlighting the specific cognitive demand required.
-4. Classify ONLY the question entries supplied in the user message. Do NOT independently split, expand, merge, or invent questions or subquestions.
-5. Return EXACTLY one analysis object for every supplied input object, in the same order.
-6. Copy each input object's `id` EXACTLY into its corresponding output object. Never create or modify an ID.
-7. Even if question text contains parts (a), (b), (i), (ii), classify the entire supplied entry as one question unless those parts are separate input objects.
-
-Respond strictly with valid JSON conforming to this schema:
+OUTPUT RULES:
+- Analyze only supplied question entries.
+- Return exactly one result per input entry, in the same order.
+- Copy each input ID exactly.
+- Always select a valid level from 1 to 6.
+- Never classify solely from an action verb.
+- Do not mark questions as ambiguous or omit their classification.
+- Return strictly valid JSON using this schema:
 {
   "analysis": [
     {
       "id": "Q1",
-      "aiBloomLevel": 2,
-      "aiBloomName": "Understand",
-      "confidence": 0.92,
-      "reason": "The question requires students to explain the conceptual mechanism of dynamic binding rather than merely stating a memorized definition.",
-      "isAmbiguous": false
+      "aiBloomLevel": 3,
+      "aiBloomName": "Apply",
+      "confidence": 0.72,
+      "reason": "The student carries out a familiar geometric construction procedure. The wording 'design' does not require an original design solution."
     }
   ]
 }
@@ -482,7 +501,9 @@ Respond strictly with valid JSON conforming to this schema:
 def assess_questions_with_groq(
     questions: List[Dict[str, Any]],
     api_key: Optional[str] = None,
-    model: Optional[str] = None
+    model: Optional[str] = None,
+    subject: Optional[str] = None,
+    academic_level: Optional[str] = None
 ) -> Tuple[List[Dict[str, Any]], str, Optional[str]]:
     """
     Calls Groq LLM to assess cognitive levels of the extracted questions.
@@ -509,14 +530,24 @@ def assess_questions_with_groq(
         for i, q in enumerate(questions)
     ]
 
-    user_prompt = f"""Analyze the following examination questions according to Revised Bloom's Taxonomy:
+    subject_context = subject.strip() if subject and subject.strip() else "Not provided"
+    level_context = academic_level.strip() if academic_level and academic_level.strip() else "Not provided"
 
+    user_prompt = f"""Classify each supplied question using the full cognitive-demand method in the system instructions.
+
+SUBJECT / DOMAIN: {subject_context}
+TARGET STUDENT ACADEMIC LEVEL: {level_context}
+
+Use these details to interpret what knowledge and procedure would normally be expected at this academic stage. Do not assume advanced reasoning merely because a question uses sophisticated wording.
+
+QUESTIONS:
 {json.dumps(question_payload, indent=2)}
 
-Return a JSON object containing the "analysis" array with each question's evaluation."""
+Return exactly one classification for each input question, preserving its ID and order. Always select the best-fit level from 1 to 6 and provide a confidence score between 0.60 and 0.98.
+    """
 
+    logger.info(f"Groq classification request started: {len(question_payload)} questions sent to model '{groq_model}'.")
     try:
-        logger.info(f"Groq classification request started: {len(question_payload)} questions sent to model '{groq_model}'.")
         client = OpenAI(
             api_key=api_key.strip(),
             base_url="https://api.groq.com/openai/v1",
@@ -636,15 +667,16 @@ Return a JSON object containing the "analysis" array with each question's evalua
         if not ai_name:
             raise RuntimeError(f"Invalid Bloom level integer {ai_level} for question ID '{qid}'. Must be between 1 and 6.")
 
-        confidence = float(eval_item.get("confidence", 0.90))
-        reason = eval_item.get("reason", f"Assessed as Level {ai_level} ({ai_name}) based on cognitive demand.")
-        is_ambiguous = bool(eval_item.get("isAmbiguous", False))
+        confidence = float(eval_item.get("confidence", 0.75))
+        if confidence > 1:
+            confidence /= 100.0
+        confidence = max(0.60, min(0.98, confidence))
+
+        reason = eval_item.get("reason", f"Assessed as Level {ai_level} ({ai_name}) based on the cognitive work required.")
 
         assigned_bl = q.get("assignedBloomLevel")
 
-        if is_ambiguous:
-            status = "AMBIGUOUS"
-        elif assigned_bl is None:
+        if assigned_bl is None:
             status = "NOT_SPECIFIED"
         elif assigned_bl == ai_level:
             status = "MATCH"
@@ -732,7 +764,9 @@ def fallback_cognitive_assessment(questions: List[Dict[str, Any]]) -> List[Dict[
 def analyze_question_paper_text(
     raw_text: str,
     api_key: Optional[str] = None,
-    model: Optional[str] = None
+    model: Optional[str] = None,
+    subject: Optional[str] = None,
+    academic_level: Optional[str] = None
 ) -> BloomAnalysisResponse:
     """
     End-to-end pipeline:
@@ -762,7 +796,9 @@ def analyze_question_paper_text(
     analyzed_questions, model_used, note = assess_questions_with_groq(
         parsed_raw_questions,
         api_key=api_key,
-        model=model
+        model=model,
+        subject=subject,
+        academic_level=academic_level
     )
 
     total = len(analyzed_questions)

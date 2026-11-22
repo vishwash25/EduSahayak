@@ -36,7 +36,7 @@ export interface BloomLevelMeta {
   lightBg: string;
   category: 'LOTS' | 'HOTS';
   desc: string;
-  verbs: string[];
+
 }
 
 export const BLOOM_LEVELS_META: Record<number, BloomLevelMeta> = {
@@ -49,7 +49,7 @@ export const BLOOM_LEVELS_META: Record<number, BloomLevelMeta> = {
     lightBg: 'rgba(59, 130, 246, 0.08)',
     category: 'LOTS',
     desc: 'Retrieving relevant knowledge from long-term memory without manipulation.',
-    verbs: ['Define', 'List', 'State', 'Identify', 'Recall', 'Name', 'Match', 'Enumerate'],
+
   },
   2: {
     level: 2,
@@ -60,7 +60,7 @@ export const BLOOM_LEVELS_META: Record<number, BloomLevelMeta> = {
     lightBg: 'rgba(6, 182, 212, 0.08)',
     category: 'LOTS',
     desc: 'Constructing meaning, summarizing, interpreting, and explaining ideas in own words.',
-    verbs: ['Explain', 'Describe', 'Summarize', 'Classify', 'Illustrate', 'Paraphrase', 'Discuss'],
+
   },
   3: {
     level: 3,
@@ -71,7 +71,7 @@ export const BLOOM_LEVELS_META: Record<number, BloomLevelMeta> = {
     lightBg: 'rgba(16, 185, 129, 0.08)',
     category: 'HOTS',
     desc: 'Executing or implementing formulas, techniques, or algorithms to solve problems.',
-    verbs: ['Calculate', 'Solve', 'Implement', 'Demonstrate', 'Execute', 'Apply', 'Determine'],
+
   },
   4: {
     level: 4,
@@ -82,7 +82,7 @@ export const BLOOM_LEVELS_META: Record<number, BloomLevelMeta> = {
     lightBg: 'rgba(245, 158, 11, 0.08)',
     category: 'HOTS',
     desc: 'Deconstructing complex concepts, examining causality, comparing architectures & trade-offs.',
-    verbs: ['Analyze', 'Compare & Contrast', 'Differentiate', 'Deconstruct', 'Examine', 'Categorize'],
+
   },
   5: {
     level: 5,
@@ -93,7 +93,7 @@ export const BLOOM_LEVELS_META: Record<number, BloomLevelMeta> = {
     lightBg: 'rgba(249, 115, 22, 0.08)',
     category: 'HOTS',
     desc: 'Making judgments based on standards, critiquing approaches, and defending decisions.',
-    verbs: ['Critique', 'Evaluate', 'Judge', 'Justify', 'Defend', 'Assess', 'Appraise', 'Validate'],
+
   },
   6: {
     level: 6,
@@ -104,7 +104,7 @@ export const BLOOM_LEVELS_META: Record<number, BloomLevelMeta> = {
     lightBg: 'rgba(168, 85, 247, 0.08)',
     category: 'HOTS',
     desc: 'Synthesizing parts into a novel whole, designing original algorithms, architectures, or models.',
-    verbs: ['Design', 'Formulate', 'Develop', 'Synthesize', 'Architect', 'Propose', 'Compose'],
+
   },
 };
 
@@ -171,7 +171,7 @@ interface BloomQuestion {
   marks: number;
   bloom_level: number;
   bloom_name: string;
-  action_verb: string;
+
   knowledge_dimension: string;
   difficulty: string;
   confidence: number;
@@ -305,7 +305,7 @@ export default function BloomsView() {
     setLoading(true);
     setError(null);
     setCalibrations({});
-    setLoadingStep('Parsing questions & extracting cognitive action verbs...');
+    setLoadingStep('Parsing questions & assessing actual cognitive demand...');
 
     try {
       const timer = setTimeout(() => {
@@ -600,10 +600,10 @@ export default function BloomsView() {
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const matchesText = q.text.toLowerCase().includes(query);
-        const matchesVerb = q.action_verb.toLowerCase().includes(query);
+
         const matchesNum = q.question_number.toLowerCase().includes(query);
         const matchesRationale = q.rationale.toLowerCase().includes(query);
-        if (!matchesText && !matchesVerb && !matchesNum && !matchesRationale) {
+        if (!matchesText && !matchesNum && !matchesRationale) {
           return false;
         }
       }
@@ -712,7 +712,7 @@ export default function BloomsView() {
                   border: '1px solid rgba(6, 182, 212, 0.3)',
                 }}
               >
-                Action Verb &amp; Knowledge Dimension
+                Knowledge Dimension
               </span>
             </div>
           </div>
@@ -1594,9 +1594,6 @@ export default function BloomsView() {
                         </div>
                       </div>
 
-                      <div style={{ marginTop: 10, fontSize: 10, color: '#64748b', fontStyle: 'italic' }}>
-                        {meta.verbs.slice(0, 3).join(', ')}...
-                      </div>
                     </div>
                   );
                 })}
@@ -1678,7 +1675,7 @@ export default function BloomsView() {
                   Audited Questions ({filteredQuestions.length} of {result.questions.length})
                 </h3>
                 <p style={{ margin: '2px 0 0 0', fontSize: 12, color: '#94a3b8' }}>
-                  Each item is verified with action verb identification, knowledge dimension &amp; upgrade suggestions
+                  Each item is assessed using the complete question, knowledge dimension &amp; upgrade suggestions
                 </p>
               </div>
 
@@ -1689,7 +1686,7 @@ export default function BloomsView() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search questions or verbs..."
+                  placeholder="Search questions..."
                   style={{
                     width: '100%',
                     background: 'rgba(0, 0, 0, 0.3)',
@@ -1851,21 +1848,6 @@ export default function BloomsView() {
                         {q.knowledge_dimension}
                       </span>
 
-                      {/* Action Verb */}
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: '3px 10px',
-                          borderRadius: 20,
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          color: '#e2e8f0',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
-                        }}
-                      >
-                        Verb: <strong>{q.action_verb}</strong>
-                      </span>
-
                       {q.is_user_calibrated && (
                         <span
                           style={{
@@ -1891,14 +1873,14 @@ export default function BloomsView() {
                         style={{
                           fontSize: 10,
                           fontWeight: 700,
-                          color: q.is_ambiguous ? '#f59e0b' : (q.confidence >= 85 ? '#10b981' : '#f59e0b'),
-                          background: q.is_ambiguous ? 'rgba(245, 158, 11, 0.1)' : (q.confidence >= 85 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'),
+                          color: q.confidence >= 85 ? '#10b981' : '#f59e0b',
+                          background: q.confidence >= 85 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                           padding: '2px 8px',
                           borderRadius: 12,
-                          border: `1px solid ${q.is_ambiguous ? 'rgba(245,158,11,0.3)' : (q.confidence >= 85 ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245,158,11,0.3)')}`,
+                          border: `1px solid ${q.confidence >= 85 ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245,158,11,0.3)'}`,
                         }}
                       >
-                        {q.is_ambiguous ? '⚡ Borderline' : `${q.confidence}% Confident`}
+                        {`Estimated confidence: ${q.confidence}%`}
                       </span>
                       <button
                         onClick={() => copyToClipboard(q.text, q.id)}

@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
 
     const form = new FormData();
     form.append("file", file, file.name);
+    form.append("subject", subject);
+    form.append("level", level);
 
     const response = await fetch(
       `${PYTHON_BACKEND}/api/bloom/analyze-upload`,

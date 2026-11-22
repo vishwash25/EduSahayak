@@ -2,6 +2,7 @@ import time
 import cv2
 import numpy as np
 import os
+import shutil
 import io
 from PIL import Image
 
@@ -29,40 +30,202 @@ class OCRComparer:
         img_pil = Image.open(io.BytesIO(image_bytes))
         width, height = img_pil.size
 
-        # 1. Tesseract
+        # 1. Tesseract - compare original and adaptive-enhanced images.
         start = time.time()
+        tes_text = ""
+        detections = []
+        avg_conf = 0
+        selected_psm = None
+        selected_preprocessing = None
+
         try:
             if pytesseract:
-                # Configure exact path for Windows Tesseract
-                pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+                executable = (
+                    os.getenv("TESSERACT_CMD")
+                    or shutil.which("tesseract")
+                )
 
-                data = pytesseract.image_to_data(img_pil, output_type=pytesseract.Output.DICT)
-                tes_text = pytesseract.image_to_string(img_pil)
-                detections = []
-                conf_sum = 0
-                conf_count = 0
+                if not executable:
+                    windows_executable = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+                    if os.path.isfile(windows_executable):
+                        executable = windows_executable
 
-                for i in range(len(data['text'])):
-                    if int(data['conf'][i]) > 0:
-                        conf = int(data['conf'][i])
-                        conf_sum += conf
-                        conf_count += 1
-                        detections.append({
-                            "text": data['text'][i],
-                            "conf": conf,
-                            "box": [
-                                round(data['top'][i] / height * 100, 2),
-                                round(data['left'][i] / width * 100, 2),
-                                round(data['width'][i] / width * 100, 2),
-                                round(data['height'][i] / height * 100, 2)
-                            ]
-                        })
+                if executable:
+                    pytesseract.pytesseract.tesseract_cmd = executable
 
-                avg_conf = round(conf_sum / conf_count) if conf_count > 0 else 0
+                rgb_array = np.array(img_pil.convert("RGB"))
+                gray = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2GRAY)
+
+                # Adaptive threshold was the most promising preprocessing
+                # method in the actual MSE2 PDF diagnostic.
+                clahe = cv2.createCLAHE(
+                    clipLimit=2.0,
+                    tileGridSize=(8, 8)
+                )
+                enhanced = clahe.apply(gray)
+
+                adaptive = cv2.adaptiveThreshold(
+                    enhanced,
+                    255,
+                    cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                    cv2.THRESH_BINARY,
+                    31,
+                    15
+                )
+
+                variants = [
+                    ("grayscale", gray),
+                    ("adaptive", adaptive)
+                ]
+
+                best_score = -1
+
+                for preprocessing_name, candidate_image in variants:
+                    for psm in (6, 11, 3):
+                        config = f"--oem 3 --psm {psm}"
+
+                        data = pytesseract.image_to_data(
+                            candidate_image,
+                            config=config,
+                            output_type=pytesseract.Output.DICT
+                        )
+
+                        page_detections = []
+                        layout_words = []
+                        confidence_values = []
+                        useful_word_count = 0
+
+                        for i, raw_token in enumerate(data.get("text", [])):
+                            token = str(raw_token).strip()
+
+                            try:
+                                confidence = float(data["conf"][i])
+                            except (ValueError, TypeError, IndexError):
+                                continue
+
+                            if not token or confidence <= 0:
+                                continue
+
+                            confidence_values.append(confidence)
+
+                            if len(token) >= 2 and any(ch.isalnum() for ch in token):
+                                useful_word_count += 1
+
+                            top_px = float(data["top"][i])
+                            left_px = float(data["left"][i])
+                            word_height_px = max(1.0, float(data["height"][i]))
+
+                            layout_words.append(
+                                (top_px, left_px, word_height_px, token)
+                            )
+
+                            page_detections.append({
+                                "text": token,
+                                "conf": round(confidence),
+                                "box": [
+                                    round(top_px / height * 100, 2),
+                                    round(left_px / width * 100, 2),
+                                    round(data["width"][i] / width * 100, 2),
+                                    round(word_height_px / height * 100, 2)
+                                ]
+                            })
+
+                        word_count = len(page_detections)
+
+                        candidate_conf = (
+                            round(sum(confidence_values) / len(confidence_values))
+                            if confidence_values else 0
+                        )
+
+                        # Reconstruct visual reading order using word coordinates,
+                        # not Tesseract block identifiers.
+                        median_height = (
+                            float(np.median([word[2] for word in layout_words]))
+                            if layout_words else 1.0
+                        )
+                        row_tolerance = max(6.0, median_height * 0.65)
+
+                        sorted_words = sorted(
+                            layout_words,
+                            key=lambda word: (
+                                word[0] + word[2] / 2,
+                                word[1]
+                            )
+                        )
+
+                        rows = []
+                        for word in sorted_words:
+                            center_y = word[0] + word[2] / 2
+
+                            if rows:
+                                previous_center = sum(
+                                    item[0] + item[2] / 2
+                                    for item in rows[-1]
+                                ) / len(rows[-1])
+                            else:
+                                previous_center = None
+
+                            if (
+                                rows
+                                and abs(center_y - previous_center) <= row_tolerance
+                            ):
+                                rows[-1].append(word)
+                            else:
+                                rows.append([word])
+
+                        candidate_lines = []
+                        for row in rows:
+                            row.sort(key=lambda word: word[1])
+                            candidate_lines.append(
+                                " ".join(word[3] for word in row)
+                            )
+
+                        candidate_text = "\n".join(candidate_lines).strip()
+
+                        meaningful_ratio = (
+                            useful_word_count / word_count
+                            if word_count else 0
+                        )
+
+                        # Prioritize useful text coverage while retaining
+                        # a confidence and readable-token quality check.
+                        candidate_score = (
+                            useful_word_count
+                            * (candidate_conf / 100.0) ** 0.5
+                            * meaningful_ratio
+                            if candidate_text and useful_word_count and candidate_conf >= 40
+                            else 0
+                        )
+
+                        # Dense examination papers are better reconstructed
+                        # with PSM 6 in our real-document benchmark.
+                        if psm == 6:
+                            candidate_score *= 1.08
+
+                        if candidate_score > best_score:
+                            best_score = candidate_score
+                            tes_text = candidate_text
+                            detections = page_detections
+                            avg_conf = candidate_conf
+                            selected_psm = psm
+                            selected_preprocessing = preprocessing_name
+
+                if not tes_text:
+                    avg_conf = 0
+                    detections = []
+
+                print(
+                    f"[TESSERACT] Selected preprocessing={selected_preprocessing}, "
+                    f"PSM={selected_psm}, words={len(detections)}, "
+                    f"confidence={avg_conf}",
+                    flush=True
+                )
+
             else:
                 tes_text = "Dependency Missing: pytesseract not installed."
                 detections = []
                 avg_conf = 0
+
         except Exception as e:
             tes_text = f"Error: {str(e)}"
             detections = []
@@ -72,7 +235,9 @@ class OCRComparer:
             "text": tes_text.strip(),
             "time": round((time.time() - start) * 1000),
             "confidence": avg_conf,
-            "detections": detections
+            "detections": detections,
+            "psm": selected_psm,
+            "preprocessing": selected_preprocessing
         }
 
         # 2. PaddleOCR

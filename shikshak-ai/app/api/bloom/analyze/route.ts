@@ -16,38 +16,73 @@ async function callDirectLLM(text: string, subject?: string, level?: string) {
   const subjectHint = subject ? `Subject / Domain: ${subject}.` : "";
   const levelHint = level ? `Target Student Level: ${level}.` : "";
 
-  const prompt = `You are an expert pedagogical assessment specialist, senior curriculum auditor, and authoritative Bloom's Taxonomy taxonomist specializing in the Revised Bloom's Taxonomy (Anderson & Krathwohl, 2001).
+  const prompt = `You are an expert academic assessment specialist applying the Revised Bloom's Taxonomy (Anderson and Krathwohl, 2001).
 
-Your task is to analyze the provided question paper or questions with MAXIMUM PEDAGOGICAL PRECISION.
-${subjectHint} ${levelHint}
+QUESTION-FIRST CLASSIFICATION PRINCIPLE:
+Treat each exact, complete question as the unit of analysis. Read every sentence,
+scenario, supplied value, condition, constraint and requested deliverable.
 
-COGNITIVE PROCESS LEVELS:
-- L1 - Remember (Level 1): Retrieving relevant knowledge from long-term memory without alteration.
-- L2 - Understand (Level 2): Constructing meaning; explaining concepts in own words, summarizing, comparing basic ideas.
-- L3 - Apply (Level 3): Executing or implementing a procedure, algorithm, or mathematical formula in a given problem scenario.
-- L4 - Analyze (Level 4): Breaking material into constituent parts, examining relationships, comparing architectural trade-offs.
-- L5 - Evaluate (Level 5): Making judgments based on explicit criteria, defending decisions, critiquing approaches.
-- L6 - Create (Level 6): Synthesizing elements into a novel whole, designing original algorithms, architectures, or models.
+Infer the complete answer or product a student must produce. Consider all essential
+sub-tasks and identify the dominant cognitive process genuinely required. Distinguish
+routine execution of a familiar method from genuine analysis, criteria-based evaluation
+and original synthesis.
 
-PRECISION & HUMANIZATION RULES:
-1. Parse every distinct question, sub-question, or numbered problem.
-2. CONTEXT over keywords: Look at the actual cognitive demand, not merely the verb.
-3. HUMANIZE THE CLASSIFICATION: Real teachers view cognitive demand as a spectrum. Provide:
-   - "educator_spectrum": e.g. "L2 (Understand) â†” L4 (Analyze)"
-   - "spectrum_lower": adjacent lower level number or null
-   - "spectrum_higher": adjacent higher level number or null
-   - "lower_perspective_rationale": why an educator might classify this lower (e.g. routine textbook problem)
-   - "higher_perspective_rationale": why an educator might classify this higher (e.g. unguided multi-step synthesis)
-   - "contextual_factors": 2-3 factors that shift human perception of this question
-   - "is_ambiguous": true if on a cognitive borderline
-4. Provide rationale, level_up_suggestion, and full paper summary metrics.
+Never map an isolated command word or keyword directly to a Bloom level. Wording is
+contextual evidence only. Do not invent requirements or inflate the level beyond what
+the complete question actually demands.
+${subjectHint}
+${levelHint}
 
-QUESTIONS TO ANALYZE:
-"""
+THE SIX COGNITIVE LEVELS:
+- L1 Remember: Retrieve or recognize facts, terms, definitions, labels, or previously learned information.
+- L2 Understand: Explain, interpret, summarize, classify, illustrate, or compare concepts to demonstrate meaning.
+- L3 Apply: Execute a learned procedure, formula, algorithm, construction method, rule, or technique in a concrete task.
+- L4 Analyze: Break information or a system into meaningful parts and identify relationships, causes, structure, patterns, or consequences.
+- L5 Evaluate: Make and defend a judgment against criteria, standards, evidence, or trade-offs.
+- L6 Create: Synthesize elements into a substantially original product, plan, model, method, design, or solution requiring meaningful decisions.
+
+REQUIRED REASONING FOR EVERY QUESTION:
+1. Identify what the student must actually do to produce a correct answer.
+2. Infer the expected answer or product: fact, explanation, routine procedure, structural analysis, criteria-based judgment, or original integrated solution.
+3. Decide whether the work involves retrieval, explanation, execution, analysis of relationships, justified judgment, or original synthesis.
+4. Use subject and academic level as context when supplied. Marks are only a weak supporting clue.
+5. Select the dominant cognitive process genuinely required. Do not inflate the level because wording sounds sophisticated.
+
+IMPORTANT EXAMPLES:
+- "Design a triangle with a circle inside it" is normally L3 Apply when it requires a familiar geometric construction using a taught method. The word "design" does not make it L6.
+- "Design an original bridge for a site with competing load, cost, material, and safety constraints, then develop an integrated proposal" may be L6 Create because it requires synthesizing a new solution.
+- "Evaluate 5 + 7" is L3 Apply when the student simply calculates the expression. The word "evaluate" does not make it L5.
+- "Evaluate two database designs against stated cost, security, and scalability criteria and defend a recommendation" is L5 Evaluate.
+- "Compare two familiar terms and state their basic differences" may be L2 Understand.
+- "Analyze how components interact and cause a system failure" is L4 Analyze.
+- "Find the output of this program" may be L3 Apply when the student traces a known execution procedure, even without an obvious action verb.
+- High marks do not automatically imply high cognitive demand. A multi-step task is not automatically Analyze or Create.
+- For diagrams and constructions, distinguish reproducing a taught method from making original decisions and integrating elements.
+- Do not invent hidden requirements. When context is incomplete, make the most reasonable academic inference and reduce confidence rather than refusing to classify.
+
+CONFIDENCE:
+Always assign exactly one best-fit level from L1 to L6. Never omit a classification or label a question ambiguous.
+Return confidence as a percentage from 60 to 98:
+- 90-98: Cognitive operation and expected work are clear.
+- 80-89: Strong evidence with minor assumptions.
+- 70-79: Reasonable inference, but some context is unknown.
+- 60-69: Adjacent levels are plausible or the expected response is partly specified.
+This is model-estimated confidence, not a statistically calibrated probability. Do not inflate it.
+
+RESPONSE RULES:
+- Parse every distinct question and sub-question.
+- Return one result per question in the original order.
+- Preserve question identifiers and exact question text.
+- Do not return action-verb identification or a verb-label field.
+- Use only valid Bloom levels 1 through 6.
+- Give a specific rationale explaining the cognitive work required, not merely repeating the action verb.
+- Set is_ambiguous to false for every question. Reflect uncertainty through the confidence score instead.
+- Return only valid JSON, without Markdown fences.
+
+QUESTIONS:
 ${text.slice(0, 8000)}
-"""
 
-Respond ONLY with valid JSON (no markdown fences):
+OUTPUT JSON STRUCTURE:
 {
   "questions": [
     {
@@ -55,47 +90,47 @@ Respond ONLY with valid JSON (no markdown fences):
       "question_number": "Q1",
       "text": "Full question text",
       "marks": 5,
-      "bloom_level": 1,
-      "bloom_name": "Remember",
-      "action_verb": "Define",
-      "knowledge_dimension": "Factual",
-      "difficulty": "Low",
-      "confidence": 95,
+      "bloom_level": 3,
+      "bloom_name": "Apply",
+
+      "knowledge_dimension": "Procedural",
+      "difficulty": "Medium",
+      "confidence": 72,
       "is_ambiguous": false,
-      "alternative_level": 2,
+      "alternative_level": null,
       "ambiguity_note": null,
-      "educator_spectrum": "L1 (Remember) â†” L2 (Understand)",
-      "spectrum_lower": 1,
-      "spectrum_higher": 2,
-      "lower_perspective_rationale": "Requires pure recall from long-term memory without manipulation.",
-      "higher_perspective_rationale": "If personal synthesis or illustration is required, could touch Level 2.",
-      "contextual_factors": ["Instructional Scaffolding", "Problem Familiarity"],
-      "rationale": "Requires pure recall from long-term memory.",
-      "level_up_suggestion": "Elevated question formulation"
+      "educator_spectrum": "L3 (Apply)",
+      "spectrum_lower": null,
+      "spectrum_higher": null,
+      "lower_perspective_rationale": "A simpler interpretation may be possible if the task only requires recalling a familiar fact.",
+      "higher_perspective_rationale": "A more demanding interpretation would require additional analysis or original synthesis not explicitly requested.",
+      "contextual_factors": ["Problem familiarity", "Instructional scaffolding"],
+      "rationale": "The student executes a familiar procedure to complete the requested task.",
+      "level_up_suggestion": "Introduce an unfamiliar context requiring students to select and justify an appropriate method."
     }
   ],
   "summary": {
     "total_questions": 1,
     "total_marks": 5,
-    "lots_percentage": 100,
-    "hots_percentage": 0,
-    "lots_count": 1,
-    "hots_count": 0,
+    "lots_percentage": 0,
+    "hots_percentage": 100,
+    "lots_count": 0,
+    "hots_count": 1,
     "distribution": {
-      "1": { "count": 1, "percentage": 100, "name": "Remember" },
-      "2": { "count": 0, "percentage": 0, "name": "Understand" },
-      "3": { "count": 0, "percentage": 0, "name": "Apply" },
-      "4": { "count": 0, "percentage": 0, "name": "Analyze" },
-      "5": { "count": 0, "percentage": 0, "name": "Evaluate" },
-      "6": { "count": 0, "percentage": 0, "name": "Create" }
+      "1": {"count": 0, "percentage": 0, "name": "Remember"},
+      "2": {"count": 0, "percentage": 0, "name": "Understand"},
+      "3": {"count": 1, "percentage": 100, "name": "Apply"},
+      "4": {"count": 0, "percentage": 0, "name": "Analyze"},
+      "5": {"count": 0, "percentage": 0, "name": "Evaluate"},
+      "6": {"count": 0, "percentage": 0, "name": "Create"}
     },
-    "dominant_level": "Remember (L1)",
-    "balance_rating": "Recall-Heavy",
-    "pedagogical_critique": "Assessment relies heavily on rote recall.",
-    "recommendations": ["Add application and analytical questions."],
+    "dominant_level": "Apply (L3)",
+    "balance_rating": "Application-Centric",
+    "pedagogical_critique": "Summarize the actual cognitive distribution of the paper.",
+    "recommendations": ["Provide balanced coverage across the six cognitive levels."],
     "subject_detected": "General",
     "ambiguous_count": 0,
-    "humanized_perception_note": "Cognitive rigor varies based on whether problems were practiced in homework."
+    "humanized_perception_note": "Confidence reflects the evidence available in each question."
   }
 }`;
 

@@ -56,7 +56,8 @@ export function normalizeBloomData(raw: any, rawText: string) {
 
     totalMarks += marksNum;
 
-    const isAmbiguous = Boolean(q.is_ambiguous);
+    // Bloom v2 always returns one best-fit level; ambiguity is reflected in confidence.
+    const isAmbiguous = false;
     const altLevel = q.alternative_level
       ? Number(q.alternative_level)
       : null;
@@ -72,8 +73,8 @@ export function normalizeBloomData(raw: any, rawText: string) {
     }
 
     confidence = Math.min(
-      100,
-      Math.max(isAmbiguous ? 50 : 70, confidence || 85)
+      98,
+      Math.max(60, confidence || 85)
     );
 
     const bloomName =
@@ -90,7 +91,7 @@ export function normalizeBloomData(raw: any, rawText: string) {
       marks: marksNum,
       bloom_level: levelNum,
       bloom_name: bloomName,
-      action_verb: q.action_verb || "Analyze",
+
       knowledge_dimension: [
         "Factual",
         "Conceptual",

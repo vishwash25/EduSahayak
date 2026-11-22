@@ -111,7 +111,28 @@ class DocumentParser:
         if tes_text and not tes_text.startswith("Error:") and not tes_text.startswith("Dependency Missing"):
             return tes_text
 
-        return paddle_text or tes_text or ""
+        # Never treat OCR diagnostics as successfully extracted question text.
+        failure_details = []
+
+        for engine_name, engine_text in (
+            ("PaddleOCR", paddle_text),
+            ("Tesseract", tes_text),
+        ):
+            if engine_text:
+                failure_details.append(f"{engine_name}: {engine_text}")
+
+        if failure_details:
+            details = " | ".join(failure_details)
+            raise RuntimeError(
+                "No OCR engine could extract readable text. "
+                "Check the OCR installation and configuration. "
+                + details
+            )
+
+        raise RuntimeError(
+            "No OCR engine returned readable text. "
+            "The document may be blank, unreadable, or require OCR."
+        )
 
     def extract_text_from_multiple_images(self, image_bytes_list: List[bytes]) -> str:
         """

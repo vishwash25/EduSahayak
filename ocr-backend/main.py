@@ -1417,6 +1417,8 @@ async def generate_pdf(req: PDFRequest):
 class BloomTextAnalyzeRequest(BaseModel):
     text: str
     model: Optional[str] = None
+    subject: Optional[str] = None
+    level: Optional[str] = None
 
 @app.post("/api/bloom/analyze", response_model=BloomAnalysisResponse)
 async def analyze_bloom_json(req: BloomTextAnalyzeRequest):
@@ -1429,7 +1431,9 @@ async def analyze_bloom_json(req: BloomTextAnalyzeRequest):
     try:
         response = analyze_question_paper_text(
             raw_text=req.text,
-            model=req.model
+            model=req.model,
+            subject=req.subject,
+            academic_level=req.level
         )
         return response
     except ValueError as ve:
@@ -1443,7 +1447,9 @@ async def analyze_bloom_upload(
     file: Optional[UploadFile] = File(None),
     files: Optional[List[UploadFile]] = File(None),
     text: Optional[str] = Form(None),
-    model: Optional[str] = Form(None)
+    model: Optional[str] = Form(None),
+    subject: Optional[str] = Form(None),
+    level: Optional[str] = Form(None)
 ):
     """
     Unified endpoint accepting:
@@ -1523,7 +1529,9 @@ async def analyze_bloom_upload(
         print("========== END RAW EXTRACTED TEXT ==========\n", flush=True)
         response = analyze_question_paper_text(
             raw_text=extracted_text,
-            model=model
+            model=model,
+            subject=subject,
+            academic_level=level
         )
         return response
     except ValueError as ve:
